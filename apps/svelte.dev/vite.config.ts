@@ -20,6 +20,7 @@ if (!process.versions.webcontainer) {
 
 const config: UserConfig = {
 	plugins,
+	server: { fs: { allow: ['../../packages'] } },
 	optimizeDeps: {
 		exclude: ['@sveltejs/site-kit', '@sveltejs/repl']
 	},
