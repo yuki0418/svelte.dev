@@ -1,0 +1,73 @@
+{
+	"name": "@sveltejs/repl",
+	"version": "0.0.1",
+	"scripts": {
+		"dev": "vite dev",
+		"build": "vite build && npm run package",
+		"preview": "vite preview",
+		"package": "svelte-kit sync && svelte-package && publint",
+		"prepublishOnly": "npm run package",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"lint": "prettier --check .",
+		"format": "prettier --write ."
+	},
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"svelte": "./dist/Repl.svelte"
+		}
+	},
+	"files": [
+		"dist",
+		"!dist/**/*.test.*",
+		"!dist/**/*.spec.*"
+	],
+	"peerDependencies": {
+		"svelte": "^5.0.0-next.1"
+	},
+	"devDependencies": {
+		"@lezer/common": "^1.2.1",
+		"@sveltejs/adapter-auto": "^3.0.0",
+		"@sveltejs/package": "^2.0.0",
+		"@sveltejs/vite-plugin-svelte": "^3.0.0",
+		"prettier": "^3.1.1",
+		"prettier-plugin-svelte": "^3.1.2",
+		"publint": "^0.1.9",
+		"svelte-check": "^3.6.0",
+		"tslib": "^2.4.1",
+		"typescript": "^5.0.0",
+		"vite": "^5.0.11"
+	},
+	"svelte": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"type": "module",
+	"dependencies": {
+		"@codemirror/autocomplete": "^6.16.0",
+		"@codemirror/commands": "^6.5.0",
+		"@codemirror/lang-css": "^6.2.1",
+		"@codemirror/lang-javascript": "^6.2.2",
+		"@codemirror/lang-json": "^6.0.1",
+		"@codemirror/lang-markdown": "^6.2.5",
+		"@codemirror/language": "^6.10.1",
+		"@codemirror/lint": "^6.7.0",
+		"@codemirror/state": "^6.4.1",
+		"@codemirror/view": "^6.26.3",
+		"@jridgewell/sourcemap-codec": "^1.4.15",
+		"@lezer/highlight": "^1.2.0",
+		"@neocodemirror/svelte": "^0.0.17",
+		"@replit/codemirror-lang-svelte": "^6.0.0",
+		"@rich_harris/svelte-split-pane": "^1.1.1",
+		"@rollup/browser": "^4.17.2",
+		"@sveltejs/kit": "^2.0.0",
+		"@sveltejs/site-kit": "6.0.0-next.59",
+		"acorn": "^8.11.3",
+		"esm-env": "^1.0.0",
+		"esrap": "^1.2.2",
+		"marked": "^11.2.0",
+		"resolve.exports": "^2.0.2",
+		"svelte": "^5.0.0-next.1",
+		"svelte-json-tree": "^2.2.0",
+		"zimmerframe": "^1.1.2"
+	}
+}
