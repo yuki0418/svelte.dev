@@ -16,7 +16,7 @@ const plugins: PluginOption[] = [
 			});
 		}
 	},
-	sveltekit()
+	sveltekit() as PluginOption
 ];
 
 // Only enable sharp if we're not in a webcontainer env
