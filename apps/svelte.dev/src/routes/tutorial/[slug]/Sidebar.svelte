@@ -75,7 +75,7 @@
 			target="_blank"
 			rel="noreferrer"
 			class="edit"
-			href="https://github.com/sveltejs/svelte.dev/tree/main/content/{exercise.dir}"
+			href="https://github.com/sveltejs/svelte.dev/tree/main/apps/svelte.dev/content/{exercise.dir}"
 		>
 			Edit this page
 		</a>
