@@ -1,5 +1,7 @@
 ---
 title: Breaking out of layouts
+editing_constraints:
+  { 'create': ['/src/routes/a/b/c/+page@b.svelte', '/src/routes/a/b/c/+page@a.svelte'] }
 ---
 
 Ordinarily, a page inherits every layout above it, meaning that `src/routes/a/b/c/+page.svelte` inherits four layouts:
