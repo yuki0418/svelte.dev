@@ -16,11 +16,11 @@
 		{#each contents ?? [] as section}
 			<li>
 				<span class="section">
-					{section.title}
+					{section.metadata.title}
 				</span>
 
 				<ul>
-					{#each section.children as { title, slug }}
+					{#each section.children as { metadata, slug }}
 						<li>
 							<a
 								data-sveltekit-preload-data
@@ -28,7 +28,7 @@
 								class:active={`/${slug}` === $page.url.pathname}
 								href="/{slug}"
 							>
-								{title}
+								{metadata.title}
 							</a>
 						</li>
 					{/each}

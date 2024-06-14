@@ -27,7 +27,7 @@ export async function load({ params }) {
 		// TODO DRY this out
 		page: {
 			slug: page.slug,
-			title: page.title,
+			title: page.metadata.title,
 			sections: page.sections,
 			body: await markedTransform(page.body)
 		}
