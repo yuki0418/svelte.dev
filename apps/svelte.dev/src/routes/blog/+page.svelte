@@ -21,7 +21,7 @@
 	{#each data.posts as post}
 		{#if !post.draft}
 			<article class="post" data-pubdate={post.date}>
-				<a class="no-underline" href="/blog/{post.slug}" title="Read the article »">
+				<a class="no-underline" href="/{post.slug}" title="Read the article »">
 					<h2>{post.title}</h2>
 					<p>{post.description}</p>
 				</a>

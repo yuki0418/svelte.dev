@@ -9,12 +9,12 @@
 </script>
 
 <svelte:head>
-	<title>{data.post.title}</title>
+	<title>{data.post.metadata.title}</title>
 
 	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:title" content={data.post.title} />
-	<meta name="twitter:description" content={data.post.description} />
-	<meta name="Description" content={data.post.description} />
+	<meta name="twitter:title" content={data.post.metadata.title} />
+	<meta name="twitter:description" content={data.post.metadata.description} />
+	<meta name="Description" content={data.post.metadata.description} />
 
 	<meta name="twitter:image" content="https://svelte.dev/blog/{$page.params.slug}/card.png" />
 	<meta name="og:image" content="https://svelte.dev/blog/{$page.params.slug}/card.png" />
@@ -22,8 +22,8 @@
 
 <div class="content">
 	<article class="post listify text" use:copy_code_descendants>
-		<h1>{data.post.title}</h1>
-		<p class="standfirst">{data.post.description}</p>
+		<h1>{data.post.metadata.title}</h1>
+		<p class="standfirst">{data.post.metadata.description}</p>
 
 		<p class="byline">
 			{#each data.post.authors as author, i}
@@ -44,17 +44,21 @@
 				path: `/blog/${data.post.slug}`,
 				sections: data.post.sections,
 				slug: data.post.slug,
-				title: data.post.title
+				title: data.post.metadata.title
 			}}
 			orientation="inline"
 		/>
 
-		{@html data.post.content}
+		{@html data.post.body}
 	</article>
 </div>
 
 <!-- the crawler doesn't understand twitter:image etc, so we have to add this hack. TODO fix in sveltekit -->
-<img hidden src="/blog/{$page.params.slug}/card.png" alt="Social card for {data.post.title}" />
+<!-- <img
+	hidden
+	src="/blog/{$page.params.slug}/card.png"
+	alt="Social card for {data.post.metadata.title}"
+/> -->
 
 <style>
 	.post {
