@@ -13,11 +13,15 @@ export async function load({ params }) {
 	// on the `runes` blog post
 	post.body = post.body.replace(/(    )+/gm, (match) => '  '.repeat(match.length / 4));
 
+	const author = post.metadata.author
+		? { name: post.metadata.author, url: post.metadata.authorURL }
+		: null;
+
 	return {
 		post: {
 			...post,
 			body: await markedTransform(post.body),
-			authors: []
+			authors: author ? [author] : []
 		}
 	};
 }
