@@ -9,12 +9,12 @@
 </script>
 
 <svelte:head>
-	<title>{data.post.metadata.title}</title>
+	<title>{data.title}</title>
 
 	<meta name="twitter:card" content="summary_large_image" />
-	<meta name="twitter:title" content={data.post.metadata.title} />
-	<meta name="twitter:description" content={data.post.metadata.description} />
-	<meta name="Description" content={data.post.metadata.description} />
+	<meta name="twitter:title" content={data.title} />
+	<meta name="twitter:description" content={data.description} />
+	<meta name="Description" content={data.description} />
 
 	<meta name="twitter:image" content="https://svelte.dev/blog/{$page.params.slug}/card.png" />
 	<meta name="og:image" content="https://svelte.dev/blog/{$page.params.slug}/card.png" />
@@ -22,29 +22,29 @@
 
 <div class="content">
 	<article class="post listify text" use:copy_code_descendants>
-		<h1>{data.post.metadata.title}</h1>
-		<p class="standfirst">{data.post.metadata.description}</p>
+		<h1>{data.title}</h1>
+		<p class="standfirst">{data.description}</p>
 
 		<p class="byline">
-			{#each data.post.authors as author, i}
-				{@const show_comma = data.post.authors.length > 2 && i < data.post.authors.length - 1}
-				{@const show_and = i === data.post.authors.length - 2}
+			{#each data.authors as author, i}
+				{@const show_comma = data.authors.length > 2 && i < data.authors.length - 1}
+				{@const show_and = i === data.authors.length - 2}
 				<svelte:element this={author.url ? 'a' : 'span'} href={author.url}
 					>{author.name}</svelte:element
 				>{#if show_comma},&nbsp;{/if}
 				{#if show_and}and&nbsp;{/if}
 			{/each}
-			<time datetime={data.post.date}>{data.post.date_formatted}</time>
+			<time datetime={data.date}>{data.date_formatted}</time>
 		</p>
 
 		<DocsOnThisPage
-			title={data.post.metadata.title}
-			path="/{data.post.slug}"
-			sections={data.post.sections}
+			title={data.title}
+			path={data.path}
+			sections={data.sections}
 			orientation="inline"
 		/>
 
-		{@html data.post.body}
+		{@html data.body}
 	</article>
 </div>
 
@@ -52,7 +52,7 @@
 <!-- <img
 	hidden
 	src="/blog/{$page.params.slug}/card.png"
-	alt="Social card for {data.post.metadata.title}"
+	alt="Social card for {data.title}"
 /> -->
 
 <style>

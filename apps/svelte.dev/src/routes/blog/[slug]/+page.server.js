@@ -17,11 +17,25 @@ export async function load({ params }) {
 		? { name: post.metadata.author, url: post.metadata.authorURL }
 		: null;
 
+	const basename = /** @type {string} */ (post.file.split('/').pop());
+	const date = basename.slice(0, 10);
+
 	return {
-		post: {
-			...post,
-			body: await markedTransform(post.body),
-			authors: author ? [author] : []
-		}
+		title: post.metadata.title,
+		description: post.metadata.description,
+		path: `/${post.slug}`,
+		date,
+		date_formatted: format_date(date),
+		body: await markedTransform(post.body),
+		authors: author ? [author] : [],
+		sections: post.sections
 	};
 }
+
+/** @param {string} date */
+function format_date(date) {
+	const [y, m, d] = date.split('-');
+	return `${months[+m - 1]} ${+d} ${y}`;
+}
+
+const months = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ');
