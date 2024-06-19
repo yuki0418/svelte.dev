@@ -2,7 +2,7 @@ import { error } from '@sveltejs/kit';
 import { markedTransform } from '@sveltejs/site-kit/markdown';
 import { index } from '$lib/server/content';
 
-export const prerender = false; // TODO
+export const prerender = true;
 
 export async function load({ params }) {
 	const post = index[`blog/${params.slug}`];
@@ -13,9 +13,19 @@ export async function load({ params }) {
 	// on the `runes` blog post
 	post.body = post.body.replace(/(    )+/gm, (match) => '  '.repeat(match.length / 4));
 
-	const author = post.metadata.author
-		? { name: post.metadata.author, url: post.metadata.authorURL }
-		: null;
+	/** @type {Array<{ name: string, url: string }>} */
+	const authors = [];
+
+	if (post.metadata.author) {
+		const names = /** @type {string} */ (post.metadata.author).split(/, ?/);
+		const urls = /** @type {string} */ (post.metadata.authorURL).split(/, ?/);
+
+		if (names.length !== urls.length) {
+			throw new Error(`Mismatched authors and URLs in ${post.file}`);
+		}
+
+		authors.push(...names.map((name, i) => ({ name, url: urls[i] })));
+	}
 
 	const basename = /** @type {string} */ (post.file.split('/').pop());
 	const date = basename.slice(0, 10);
@@ -27,7 +37,7 @@ export async function load({ params }) {
 		date,
 		date_formatted: format_date(date),
 		body: await markedTransform(post.body),
-		authors: author ? [author] : [],
+		authors,
 		sections: post.sections
 	};
 }
