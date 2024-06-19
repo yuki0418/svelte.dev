@@ -38,14 +38,9 @@
 		</p>
 
 		<DocsOnThisPage
-			details={{
-				content: '',
-				file: '',
-				path: `/blog/${data.post.slug}`,
-				sections: data.post.sections,
-				slug: data.post.slug,
-				title: data.post.metadata.title
-			}}
+			title={data.post.metadata.title}
+			path="/{data.post.slug}"
+			sections={data.post.sections}
 			orientation="inline"
 		/>
 

@@ -1,4 +1,5 @@
 import { error } from '@sveltejs/kit';
+import { markedTransform } from '@sveltejs/site-kit/markdown';
 import { index } from '$lib/server/content';
 
 export const prerender = false; // TODO
@@ -15,6 +16,7 @@ export async function load({ params }) {
 	return {
 		post: {
 			...post,
+			body: await markedTransform(post.body),
 			authors: []
 		}
 	};
