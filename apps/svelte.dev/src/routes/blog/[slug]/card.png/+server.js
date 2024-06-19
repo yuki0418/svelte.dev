@@ -1,30 +1,37 @@
-import { get_blog_data, get_processed_blog_post } from '$lib/server/blog/index.js';
+import { render } from 'svelte/server';
 import { Resvg } from '@resvg/resvg-js';
 import { error } from '@sveltejs/kit';
+import { read } from '$app/server';
 import satori from 'satori';
 import { html as toReactNode } from 'satori-html';
 import Card from './Card.svelte';
-import OverpassRegular from './Overpass-Regular.ttf';
+import OverpassRegular from './Overpass-Regular.ttf?url';
+import { index } from '$lib/server/content';
 
 const height = 630;
 const width = 1200;
 
 export const prerender = false; // TODO
 
+const data = await read(OverpassRegular).arrayBuffer();
+
 export async function GET({ params }) {
-	const post = await get_processed_blog_post(await get_blog_data(), params.slug);
+	const post = index[`blog/${params.slug}`];
 
 	if (!post) error(404);
 
-	// @ts-ignore
-	const result = Card.render({ post });
-	const element = toReactNode(`${result.html}<style>${result.css.code}</style>`);
+	const result = render(Card, { props: { post } });
+
+	console.log(result.body);
+
+	// @ts-expect-error TODO we need to get the CSS in here somehow...
+	const element = toReactNode(`${result.body}<style>${result.css?.code ?? ''}</style>`);
 
 	const svg = await satori(element, {
 		fonts: [
 			{
 				name: 'Overpass',
-				data: Buffer.from(OverpassRegular),
+				data,
 				style: 'normal',
 				weight: 400
 			}

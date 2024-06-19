@@ -10,8 +10,8 @@
 	import { readable } from 'svelte/store';
 	import { slide } from 'svelte/transition';
 
-	/** @type {{details: import('../types').Document, orientation?: 'auto' | 'inline' | 'aside', children?: import('svelte').Snippet}} */
-	let { details, orientation = 'auto', children } = $props();
+	/** @type {{ title: string, path: string, sections: import('../types').Section[], orientation?: 'auto' | 'inline' | 'aside', children?: import('svelte').Snippet }} */
+	let { title, path, sections, orientation = 'auto', children } = $props();
 
 	const dispatch = createEventDispatcher();
 
@@ -170,7 +170,7 @@
 	onhashchange={() => select($page.url)}
 />
 
-{#if !$is_mobile || ($is_mobile && details.sections.length > 0)}
+{#if !$is_mobile || ($is_mobile && sections.length > 0)}
 	<aside
 		class="on-this-page"
 		class:mobile={$is_mobile}
@@ -215,13 +215,11 @@
 			>
 				<ul>
 					<li>
-						<a
-							href="/{details.slug}"
-							aria-current={hash === '' ? 'page' : false}
-							onclick={on_link_click}>{details.metadata.title}</a
+						<a href={path} aria-current={hash === '' ? 'page' : false} onclick={on_link_click}
+							>{title}</a
 						>
 					</li>
-					{#each details.sections as { title, slug }}
+					{#each sections as { title, slug }}
 						<li>
 							<a
 								href={`#${slug}`}
