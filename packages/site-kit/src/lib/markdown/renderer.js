@@ -696,6 +696,100 @@ export async function replace_export_type_placeholders(content, modules) {
 }
 
 /**
+ * Takes a module and returns a markdown string.
+ * @param {import('.').Modules[0]} module
+ */
+export function stringify_module(module) {
+	let content = '';
+
+	if (module.exports && module.exports.length > 0) {
+		// deduplication is necessary for now, because of method overloads
+		const exports = Array.from(new Set(module.exports?.map((x) => x.name)));
+
+		let declaration = `import { ${exports.join(', ')} } from '${module.name}';`;
+		if (declaration.length > 80) {
+			declaration = `import {\n\t${exports.join(',\n\t')}\n} from '${module.name}';`;
+		}
+
+		content += fence(declaration, 'js');
+	}
+
+	if (module.comment) {
+		content += `${module.comment}\n\n`;
+	}
+
+	for (const e of module.exports || []) {
+		const markdown =
+			`<div class="ts-block">${fence(e.snippet)}` +
+			e.children?.map((v) => stringify(v)).join('\n\n') +
+			`</div>`;
+		content += `## ${e.name}\n\n${e.comment}\n\n${markdown}\n\n`;
+	}
+
+	for (const t of module.types || []) {
+		if (module.name === '@sveltejs/kit' && (t.name === 'Config' || t.name === 'KitConfig')) {
+			// special case — we want these to be on a separate page
+			content +=
+				`## ${t.name}\n\n` +
+				'See the [configuration reference](/docs/reference/configuration) for details.\n\n';
+		} else {
+			content += `## ${t.name}\n\n` + stringify_type(t);
+		}
+	}
+
+	return content;
+}
+
+/**
+ * @param {import('.').ModuleChild} t
+ */
+export function stringify_type(t) {
+	let content = '';
+
+	if (t.deprecated) {
+		content += `<blockquote class="tag deprecated">\n\n${t.deprecated}\n\n</blockquote>\n\n`;
+	}
+
+	if (t.comment) {
+		content += `${t.comment}\n\n`;
+	}
+
+	const children = t.children?.map((val) => stringify(val, 'dts')).join('\n\n');
+	content += `<div class="ts-block">${fence(t.snippet, 'dts')}` + children + `\n</div>\n\n`;
+	return content;
+}
+
+/**
+ * @param {import('.').ModuleChild} type
+ */
+export function stringify_expanded_type(type) {
+	return (
+		type.comment +
+		type.children
+			?.map((child) => {
+				let section = `## ${child.name}`;
+
+				if (child.bullets) {
+					section += `\n\n<div class="ts-block-property-bullets">\n\n${child.bullets.join(
+						'\n'
+					)}\n\n</div>`;
+				}
+
+				section += `\n\n${child.comment}`;
+
+				if (child.children) {
+					section += `\n\n<div class="ts-block-property-children">\n\n${child.children
+						.map((v) => stringify(v))
+						.join('\n')}\n\n</div>`;
+				}
+
+				return section;
+			})
+			.join('\n\n')
+	);
+}
+
+/**
  * @param {string} code
  * @param {keyof typeof import('./utils').SHIKI_LANGUAGE_MAP} lang
  */
@@ -719,10 +813,21 @@ function fence(code, lang = 'ts') {
 function stringify(member, lang = 'ts') {
 	if (!member) return '';
 
+	// It's important to always use two newlines after a dom tag or else markdown does not render it properly
+
 	const bullet_block =
 		(member.bullets?.length ?? 0) > 0
-			? `\n\n<div class="ts-block-property-bullets">\n\n${member.bullets?.join('\n')}</div>`
+			? `\n\n<div class="ts-block-property-bullets">\n\n${member.bullets?.join('\n')}\n\n</div>`
 			: '';
+
+	const comment = member.comment
+		? '\n\n' +
+			member.comment
+				.replace(/\/\/\/ type: (.+)/g, '/** @type {$1} */')
+				.replace(/^(  )+/gm, (match, spaces) => {
+					return '\t'.repeat(match.length / 2);
+				})
+		: '';
 
 	const child_block =
 		(member.children?.length ?? 0) > 0
@@ -733,16 +838,12 @@ function stringify(member, lang = 'ts') {
 
 	return (
 		`<div class="ts-block-property">${fence(member.snippet, lang)}` +
-		`<div class="ts-block-property-details">\n\n` +
+		`<div class="ts-block-property-details">` +
 		bullet_block +
-		'\n\n' +
-		member.comment
-			.replace(/\/\/\/ type: (.+)/g, '/** @type {$1} */')
-			.replace(/^(  )+/gm, (match, spaces) => {
-				return '\t'.repeat(match.length / 2);
-			}) +
+		comment +
 		child_block +
-		'\n</div></div>'
+		(bullet_block || comment || child_block ? '\n\n' : '') +
+		'</div>\n</div>'
 	);
 }
 
