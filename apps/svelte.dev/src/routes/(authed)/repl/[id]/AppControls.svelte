@@ -8,11 +8,12 @@
 	import { isMac } from '$lib/utils/compat.js';
 	import Repl from '@sveltejs/repl';
 	import { get_app_context } from '../../app-context';
+	import type { Gist, User } from '$lib/db/types';
 
 	interface Props {
-		user: TODO;
+		user: User;
 		repl: Repl;
-		gist: TODO;
+		gist: Gist;
 		name: string;
 		zen_mode: boolean;
 		modified_count: number;
@@ -160,7 +161,10 @@
 
 		const { files: components, imports } = repl.toJSON();
 
-		const files = (await (await fetch('/svelte-app.json')).json()) as TODO[];
+		const files = (await (await fetch('/svelte-app.json')).json()) as Array<{
+			path: string;
+			data: string;
+		}>;
 
 		if (imports.length > 0) {
 			const idx = files.findIndex(({ path }) => path === 'package.json');
