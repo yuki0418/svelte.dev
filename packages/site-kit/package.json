@@ -34,7 +34,7 @@
 		"prettier": "^3.3.2",
 		"prettier-plugin-svelte": "^3.2.4",
 		"shiki-twoslash": "^3.1.2",
-		"svelte": "^5.0.0-next.1",
+		"svelte": "^5.0.0-next.160",
 		"svelte-check": "^3.8.0",
 		"typescript": "^5.4.5",
 		"vite": "^5.2.11"
@@ -52,37 +52,37 @@
 			"types": "./src/lib/types.d.ts"
 		},
 		"./actions": {
-			"default": "./src/lib/actions/index.js"
+			"default": "./src/lib/actions/index.ts"
 		},
 		"./stores": {
-			"default": "./src/lib/stores/index.js"
+			"default": "./src/lib/stores/index.ts"
 		},
 		"./branding/svelte-logo.svg": "./src/lib/branding/svelte-logo.svg",
 		"./components": {
-			"default": "./src/lib/components/index.js",
-			"svelte": "./src/lib/components/index.js"
+			"default": "./src/lib/components/index.ts",
+			"svelte": "./src/lib/components/index.ts"
 		},
 		"./home": {
-			"default": "./src/lib/home/index.js",
-			"svelte": "./src/lib/home/index.js"
+			"default": "./src/lib/home/index.ts",
+			"svelte": "./src/lib/home/index.ts"
 		},
 		"./docs": {
-			"default": "./src/lib/docs/index.js",
-			"svelte": "./src/lib/docs/index.js"
+			"default": "./src/lib/docs/index.ts",
+			"svelte": "./src/lib/docs/index.ts"
 		},
 		"./markdown": {
-			"default": "./src/lib/markdown/index.js",
-			"svelte": "./src/lib/markdown/index.js"
+			"default": "./src/lib/markdown/index.ts",
+			"svelte": "./src/lib/markdown/index.ts"
 		},
 		"./nav": {
-			"default": "./src/lib/nav/index.js",
-			"svelte": "./src/lib/nav/index.js"
+			"default": "./src/lib/nav/index.ts",
+			"svelte": "./src/lib/nav/index.ts"
 		},
 		"./icons/link.svg": "./src/lib/icons/link.svg",
 		"./icons/search.svg": "./src/lib/icons/search.svg",
 		"./search": {
-			"default": "./src/lib/search/index.js",
-			"svelte": "./src/lib/search/index.js"
+			"default": "./src/lib/search/index.ts",
+			"svelte": "./src/lib/search/index.ts"
 		},
 		"./server/content": {
 			"default": "./src/lib/server/content/index.ts",
