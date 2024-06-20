@@ -8,7 +8,7 @@
 		this: () => Promise<Component>;
 	} = $props();
 
-	let constructor: Component;
+	let constructor = $state() as Component;
 
 	onMount(async () => {
 		constructor = await importer();

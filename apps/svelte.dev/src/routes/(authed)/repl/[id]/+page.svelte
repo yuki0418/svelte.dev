@@ -10,8 +10,7 @@
 	let { data } = $props();
 
 	let version = $state(data.version);
-
-	let repl: Repl;
+	let repl = $state() as Repl;
 	let name = $state(data.gist.name);
 	let zen_mode = $state(false);
 	let modified_count = $state(0);

@@ -9,8 +9,7 @@
 	let { data } = $props();
 
 	let version = $state(data.version);
-
-	let repl: import('@sveltejs/repl').default;
+	let repl = $state() as Repl;
 
 	function update_query_string(version: string) {
 		const params = [];

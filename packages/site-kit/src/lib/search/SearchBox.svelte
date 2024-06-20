@@ -20,7 +20,7 @@ It appears when the user clicks on the `Search` component or presses the corresp
 
 	let { placeholder = 'Search', idle, search_description, no_results }: Props = $props();
 
-	let modal: HTMLElement;
+	let modal = $state() as HTMLElement;
 
 	// TODO proper types
 	let search: any = $state(null);
