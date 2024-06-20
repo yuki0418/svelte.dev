@@ -18,9 +18,19 @@ function get_href(parts: string[]) {
 async function content() {
 	const blocks: Block[] = [];
 	const breadcrumbs: string[] = [];
-	// We want the actual doc contents: docs -> docs/svelte etc -> docs/svelte/overview etc -> docs/svelte/overview/introduction etc
-	const docs = index.docs.children.flatMap((topic) =>
+	// We want the actual contents: docs -> docs/svelte etc -> docs/svelte/overview etc -> docs/svelte/overview/introduction etc
+	let docs = index.docs.children.flatMap((topic) =>
 		topic.children.flatMap((section) => section.children)
+	);
+	docs = docs.concat(
+		index.tutorial.children.flatMap((topic) =>
+			topic.children.flatMap((section) =>
+				section.children.map((entry) => ({
+					...entry,
+					slug: `tutorial/${entry.slug.split('/').pop()}`
+				}))
+			)
+		)
 	);
 
 	for (const document of docs) {
