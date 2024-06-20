@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { getContext } from 'svelte';
 	import { Icon } from '@sveltejs/site-kit/components';
 	import { ago } from '$lib/time';
 	import { goto, invalidateAll } from '$app/navigation';
@@ -66,23 +65,24 @@
 				/>
 				<span>
 					{data.user.github_name || data.user.github_login}
-					(<a on:click|preventDefault={logout} href="/auth/logout">log out</a>)
+					(<a onclick={(e) => (e.preventDefault(), logout())} href="/auth/logout">log out</a>)
 				</span>
 			</div>
 		</header>
 
 		<div class="controls">
 			{#if selected.length > 0}
-				<button class="delete" on:click={() => destroy_selected()} disabled={destroying}>
+				<button class="delete" onclick={destroy_selected} disabled={destroying}>
 					<Icon name="delete" />
 					Delete {selected.length}
 					{selected.length === 1 ? 'app' : 'apps'}
 				</button>
 
-				<button on:click={() => (selected = [])}>Clear selection</button>
+				<button onclick={() => (selected = [])}>Clear selection</button>
 			{:else}
 				<form
-					on:submit|preventDefault={(e) => {
+					onsubmit={(e) => {
+						e.preventDefault()
 						const search = new FormData(e.target as HTMLFormElement).get('search');
 						goto(search ? `/apps?search=${encodeURIComponent(search.toString())}` : '/apps');
 					}}
@@ -134,7 +134,8 @@
 		{/if}
 	{:else}
 		<p>
-			Please <a on:click|preventDefault={login} href="/auth/login">log in</a> to see your saved apps.
+			Please <a onclick={(e) => (e.preventDefault(), login())} href="/auth/login">log in</a> to see your
+			saved apps.
 		</p>
 	{/if}
 </div>
