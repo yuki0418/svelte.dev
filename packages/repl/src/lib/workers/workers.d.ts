@@ -1,22 +1,52 @@
+import type { CompileError, CompileResult, Warning } from 'svelte/compiler';
 import type { CompileOptions, File } from '../types';
 
-export type CompileMessageData = {
-	id: number;
-	type: 'compile' | 'init';
+export type CompilerCommand =
+	| {
+			id: number;
+			type: 'init';
+			svelte_url: string;
+	  }
+	| {
+			id: number;
+			type: 'compile';
+			payload: CompilerInput;
+	  }
+	| {
+			id: number;
+			type: 'migrate';
+			payload: MigrateInput;
+	  };
+
+export interface CompilerInput {
 	source: string;
 	options: CompileOptions;
 	is_entry: boolean;
 	return_ast: boolean;
 	svelte_url?: string;
-	result: {
-		js: string;
-		css: string;
-		ast?: import('svelte/types/compiler/interfaces').Ast;
-	};
+}
+
+export interface CompilerOutput {
+	js: string;
+	css: string;
+	ast?: CompileResult['ast'];
+	error?: CompileError;
+	warnings: Warning[];
 	metadata?: {
 		runes: boolean;
 	};
-};
+}
+
+export interface MigrateInput {
+	source: string;
+}
+
+export interface MigrateOutput {
+	result: {
+		code: string;
+	};
+	error?: string;
+}
 
 export type BundleMessageData = {
 	uid: number;
@@ -27,8 +57,6 @@ export type BundleMessageData = {
 	files: File[];
 };
 
-export type MigrateMessageData = {
-	id: number;
-	result: { code: string };
-	error?: string;
-};
+declare global {
+	var svelte: typeof import('svelte/compiler');
+}

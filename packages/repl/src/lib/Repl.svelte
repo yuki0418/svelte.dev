@@ -27,7 +27,6 @@
 	export let previewTheme = 'light';
 	export let showModified = false;
 	export let showAst = false;
-	export let autocomplete = true;
 	/** @type {boolean} */
 	export let vim;
 
@@ -267,7 +266,7 @@
 
 	const compiler = BROWSER ? new Compiler(svelteUrl) : null;
 
-	/** @type {import('./workers/workers').CompileMessageData | null} */
+	/** @type {import('./workers/workers').CompilerOutput | null} */
 	let compiled = null;
 
 	/**
@@ -279,7 +278,7 @@
 
 		if ($selected.type === 'svelte' || $selected.type === 'js') {
 			compiled = await compiler.compile($selected, $compile_options, true);
-			runes = compiled.result.metadata?.runes ?? false;
+			runes = compiled.metadata?.runes ?? false;
 		} else {
 			runes = false;
 		}
@@ -350,12 +349,7 @@
 		>
 			<section slot="a">
 				<ComponentSelector show_modified={showModified} {runes} on:add on:remove />
-				<ModuleEditor
-					{autocomplete}
-					error={compiled?.result.error}
-					warnings={compiled?.result.warnings ?? []}
-					{vim}
-				/>
+				<ModuleEditor error={compiled?.error} warnings={compiled?.warnings ?? []} {vim} />
 			</section>
 
 			<section slot="b" style="height: 100%;">

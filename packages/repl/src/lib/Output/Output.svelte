@@ -31,7 +31,7 @@
 	/** @type {import('../types').File | null} */
 	export let selected;
 
-	/** @type {import('../workers/workers').CompileMessageData | null} */
+	/** @type {import('../workers/workers').CompilerOutput | null} */
 	export let compiled;
 
 	$: if (selected && js_editor && css_editor) {
@@ -39,10 +39,10 @@
 			js_editor.set({ code: `/* Select a component to see its compiled code */`, lang: 'js' });
 			css_editor.set({ code: `/* Select a component to see its compiled code */`, lang: 'css' });
 		} else if (selected.type === 'md') {
-			markdown = marked(selected.source);
+			markdown = /** @type {string} */ (marked(selected.source));
 		} else if (compiled) {
-			js_editor.set({ code: compiled.result.js, lang: 'js' });
-			css_editor.set({ code: compiled.result.css, lang: 'css' });
+			js_editor.set({ code: compiled.js, lang: 'js' });
+			css_editor.set({ code: compiled.css, lang: 'css' });
 		}
 	}
 
@@ -58,7 +58,7 @@
 	let view = 'result';
 	let markdown = '';
 
-	$: ast = compiled?.result?.ast;
+	$: ast = compiled?.ast;
 </script>
 
 <div class="view-toggle">

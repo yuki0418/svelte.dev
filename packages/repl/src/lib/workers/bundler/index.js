@@ -26,15 +26,6 @@ const ready = new Promise((f) => {
 	fulfil_ready = f;
 });
 
-/**
- * @type {{
- *   compile: typeof import('svelte/compiler').compile;
- *   compileModule: typeof import('svelte/compiler').compileModule;
- *   VERSION: string;
- * }}
- */
-let svelte;
-
 self.addEventListener(
 	'message',
 	/** @param {MessageEvent<import('../workers.js').BundleMessageData>} event */ async (event) => {
@@ -47,8 +38,6 @@ self.addEventListener(
 
 				const compiler = await fetch(`${svelte_url}/compiler/index.js`).then((r) => r.text());
 				(0, eval)(compiler + '\n//# sourceURL=compiler/index.js@' + version);
-
-				svelte = globalThis.svelte;
 
 				fulfil_ready();
 				break;
@@ -174,13 +163,12 @@ async function resolve_from_pkg(pkg, subpath, uid, pkg_url_base) {
 	// modern
 	if (pkg.exports) {
 		try {
-			const [resolved] =
-				resolve.exports(pkg, subpath, {
-					browser: true,
-					conditions: ['svelte', 'development']
-				}) ?? [];
+			const resolved = resolve.exports(pkg, subpath, {
+				browser: true,
+				conditions: ['svelte', 'development']
+			});
 
-			return resolved;
+			return resolved?.[0];
 		} catch {
 			throw `no matched export path was found in "${pkg.name}/package.json"`;
 		}
@@ -451,7 +439,9 @@ async function get_bundle(uid, mode, cache, local_files_lookup) {
 					'process.env.NODE_ENV': JSON.stringify('production')
 				})
 			],
-			inlineDynamicImports: true,
+			output: {
+				inlineDynamicImports: true
+			},
 			onwarn(warning) {
 				all_warnings.push({
 					message: warning.message
