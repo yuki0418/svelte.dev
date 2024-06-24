@@ -1,9 +1,9 @@
-<script>
+<script lang="ts">
 	import JSONNode from 'svelte-json-tree';
 	import ConsoleTable from './ConsoleTable.svelte';
+	import type { Log } from './console';
 
-	/** @type {import('./console').Log} */
-	export let log;
+	export let log: Log;
 	export let depth = 0;
 
 	function toggle_group_collapse() {
@@ -12,8 +12,7 @@
 
 	let style;
 
-	/** @param {string} text */
-	function sanitize_css(text) {
+	function sanitize_css(text: string) {
 		style ??= document.createElement('span').style;
 		style.cssText = text;
 
@@ -28,8 +27,7 @@
 		return style.cssText;
 	}
 
-	/** @param {any[]} [args] */
-	function format_args(args = []) {
+	function format_args(args: any[] = []) {
 		if (args.length === 0) return args;
 
 		if (typeof args[0] !== 'string') {
