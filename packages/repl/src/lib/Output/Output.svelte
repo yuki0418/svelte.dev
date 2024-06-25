@@ -1,16 +1,16 @@
 <script lang="ts">
-	import { get_repl_context } from '$lib/context.js';
+	import { get_repl_context } from '../context';
 	import { marked } from 'marked';
 	import CodeMirror from '../CodeMirror.svelte';
 	import AstView from './AstView.svelte';
 	import CompilerOptions from './CompilerOptions.svelte';
 	import PaneWithPanel from './PaneWithPanel.svelte';
 	import Viewer from './Viewer.svelte';
-	import type { File, MessageDetails } from '$lib/types';
-	import type { CompilerOutput } from '$lib/workers/workers';
+	import type { File, MessageDetails } from '../types';
+	import type { CompilerOutput } from '../workers/workers';
 
 	export let status: string | null;
-	export let runtimeError: MessageDetails | null = null;
+	export let runtimeError: Error | null = null;
 	export let embedded = false;
 	export let relaxed = false;
 	export let injectedJS: string;

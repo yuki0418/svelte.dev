@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { get_repl_context } from '$lib/context.js';
+	import { get_repl_context } from '../context';
 	import Checkbox from '../Checkbox.svelte';
 
 	const { compile_options } = get_repl_context();
@@ -20,7 +20,7 @@
 	<!-- svelte-ignore a11y_label_has_associated_control (TODO this warning should probably be disabled if there's a component)-->
 	<label class="option">
 		<span class="key">dev:</span>
-		<Checkbox bind:checked={$compile_options.dev} />
+		<Checkbox bind:checked={$compile_options.dev!} />
 		<span class="boolean">{$compile_options.dev}</span>,
 	</label>
 	});
