@@ -101,7 +101,7 @@
 			--on-this-page-display: block;
 			padding: var(--sk-page-padding-top) calc(var(--sidebar-width) + var(--sk-page-padding-side));
 			margin: 0 auto;
-			max-width: var(--sk-line-max-width);
+			width: var(--sk-line-max-width);
 			box-sizing: content-box;
 		}
 	}
