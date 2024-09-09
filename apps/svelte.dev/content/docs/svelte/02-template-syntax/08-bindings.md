@@ -261,10 +261,10 @@ Components also support `bind:this`, allowing you to interact with component ins
 ```svelte
 <!--- ShoppingCart.svelte --->
 <script>
-    // All instance exports are available on the instance object
-    export function empty() {
-        // ...
-    }
+	// All instance exports are available on the instance object
+	export function empty() {
+		// ...
+	}
 </script>
 ```
 
@@ -288,7 +288,7 @@ To mark a property as bindable, use the `$bindable` rune:
 
 ```svelte
 <script>
-    let { readonlyProperty, bindableProperty = $bindable() } = $props();
+	let { readonlyProperty, bindableProperty = $bindable() } = $props();
 </script>
 ```
 
@@ -298,7 +298,7 @@ Bindable properties can have a fallback value:
 
 ```svelte
 <script>
-    let { bindableProperty = $bindable('fallback value') } = $props();
+	let { bindableProperty = $bindable('fallback value') } = $props();
 </script>
 ```
 
