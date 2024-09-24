@@ -20,16 +20,13 @@
 
 		<!-- add inline style and blocking script to prevent content flash/jump -->
 		<style>
-			.ts-version {
+			.js-version {
 				display: none;
 			}
-			.prefers-ts .js-version {
-				display: none;
-			}
-			.prefers-ts .ts-version {
+			.prefers-js .js-version {
 				display: block;
 			}
-			.no-js .ts-toggle {
+			.prefers-js .ts-version {
 				display: none;
 			}
 		</style>
@@ -48,5 +45,13 @@
 		</script>
 
 		<div style="height: 100%">%sveltekit.body%</div>
+
+		<script>
+			if (localStorage.getItem('svelte:show-legacy') !== 'false') {
+				for (const node of document.querySelectorAll('details.legacy')) {
+					node.open = true;
+				}
+			}
+		</script>
 	</body>
 </html>
