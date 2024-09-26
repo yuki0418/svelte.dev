@@ -21,17 +21,9 @@ Top navigation bar for the application. It provides a slot for the left side, th
 		links: NavigationLink[];
 		search?: Snippet;
 		external_links?: Snippet;
-		theme_label?: Snippet;
 	}
 
-	let {
-		home_title = 'Homepage',
-		title,
-		links,
-		search,
-		external_links,
-		theme_label
-	}: Props = $props();
+	let { home_title = 'Homepage', title, links, search, external_links }: Props = $props();
 
 	let visible = $state(true);
 
@@ -88,10 +80,6 @@ Top navigation bar for the application. It provides a slot for the left side, th
 	{/if}
 
 	<div class="desktop">
-		<div class="center-area">
-			{@render search?.()}
-		</div>
-
 		<div class="menu">
 			{#each links as link}
 				{#if link.sections?.[0].path}
@@ -105,15 +93,15 @@ Top navigation bar for the application. It provides a slot for the left side, th
 					</a>
 				{/if}
 			{/each}
+		</div>
 
-			<Separator />
-
+		<div class="menu">
 			{@render external_links?.()}
 
+			{@render search?.()}
+
 			<div class="appearance">
-				<span class="caption"
-					>{#if theme_label}{@render theme_label()}{:else}Theme{/if}</span
-				>
+				<span class="caption">Theme</span>
 				<ThemeToggle />
 			</div>
 		</div>
@@ -138,9 +126,7 @@ Top navigation bar for the application. It provides a slot for the left side, th
 			<Separator />
 
 			<div class="appearance">
-				<span class="caption"
-					>{#if theme_label}{@render theme_label()}{:else}Theme{/if}</span
-				>
+				<span class="caption">Theme</span>
 				<ThemeToggle />
 			</div>
 		</Menu>
@@ -224,6 +210,7 @@ Top navigation bar for the application. It provides a slot for the left side, th
 		background-size: auto 70%;
 		align-items: center;
 		padding-left: calc(var(--sk-page-padding-side) + 4rem);
+		padding-right: 2rem;
 		text-decoration: none;
 		text-transform: uppercase;
 		letter-spacing: 0.05em;
@@ -317,13 +304,6 @@ Top navigation bar for the application. It provides a slot for the left side, th
 		}
 	}
 
-	.desktop .center-area {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		flex: 1;
-	}
-
 	@media (min-width: 800px) {
 		nav {
 			display: grid;
@@ -342,6 +322,9 @@ Top navigation bar for the application. It provides a slot for the left side, th
 			height: 100%;
 			align-items: center;
 			padding: 0 var(--sk-page-padding-side) 0 0;
+		}
+
+		.menu:last-child {
 			justify-content: end;
 		}
 
@@ -355,13 +338,6 @@ Top navigation bar for the application. It provides a slot for the left side, th
 
 		nav :global(.small) {
 			display: none;
-		}
-	}
-
-	@media (min-width: 1240px) {
-		nav {
-			display: grid;
-			grid-template-columns: 1fr auto 1fr;
 		}
 	}
 </style>

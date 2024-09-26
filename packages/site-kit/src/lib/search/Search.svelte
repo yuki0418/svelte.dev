@@ -106,6 +106,7 @@ Renders a search widget which when clicked (or the corresponding keyboard shortc
 	@media (min-width: 800px) {
 		.search-container {
 			width: 11rem;
+			margin: 0 1rem;
 		}
 
 		.shortcut {
@@ -139,7 +140,7 @@ Renders a search widget which when clicked (or the corresponding keyboard shortc
 
 	@media (min-width: 1240px) {
 		.search-container {
-			width: 32rem;
+			width: 19rem;
 		}
 	}
 </style>
