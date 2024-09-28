@@ -69,13 +69,11 @@ Top navigation bar for the application. It provides a slot for the left side, th
 	style:z-index={$overlay_open && ($searching || $on_this_page_open) ? 80 : null}
 	aria-label="Primary"
 >
-	<a class="home-link" href="/" title={home_title}>
-		<strong>svelte</strong>
-	</a>
+	<a class="home-link" href="/" title={home_title} aria-label="Svelte"></a>
 
 	{#if title}
 		<div class="current-section mobile">
-			｜ {title}
+			{title}
 		</div>
 	{/if}
 
@@ -167,6 +165,7 @@ Top navigation bar for the application. It provides a slot for the left side, th
 		font-size: 0.8em;
 		color: var(--sk-text-3);
 		margin-left: 0.4em;
+		padding: 0.1rem 0 0 0;
 	}
 
 	@media (max-width: 800px) {
@@ -184,7 +183,7 @@ Top navigation bar for the application. It provides a slot for the left side, th
 	.menu :global(a) {
 		color: var(--sk-text-2);
 		line-height: 1;
-		padding: 0 0.3em;
+		padding: 0.1rem 0.5rem 0 0.5rem;
 		white-space: nowrap;
 		height: 100%;
 		display: flex;
@@ -202,31 +201,12 @@ Top navigation bar for the application. It provides a slot for the left side, th
 	}
 
 	.home-link {
-		max-width: max-content;
+		--padding-right: 1rem;
+		width: 13rem;
 		height: 100%;
-		display: flex;
-		background-image: url(../branding/svelte-logo.svg);
-		background-position: calc(var(--sk-page-padding-side) - 1rem) 50%;
-		background-repeat: no-repeat;
-		background-size: auto 70%;
-		align-items: center;
-		padding-left: calc(var(--sk-page-padding-side) + 4rem);
-		padding-right: 2rem;
-		text-decoration: none;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
-		font-size: 1.8rem;
-		color: var(--sk-text-4);
-
-		strong {
-			position: relative;
-			color: var(--sk-text-1);
-			font-weight: inherit;
-
-			@media (min-width: 800px) {
-				top: 1px;
-			}
-		}
+		background: url(../branding/svelte.svg) no-repeat var(--sk-page-padding-side) 50% /
+			calc(100% - var(--sk-page-padding-side) - var(--padding-right)) auto;
+		padding: 0 var(--padding-right) 0 calc(var(--sk-page-padding-side) + 0rem);
 	}
 
 	.mobile-menu {
@@ -306,6 +286,11 @@ Top navigation bar for the application. It provides a slot for the left side, th
 	}
 
 	@media (min-width: 800px) {
+		.home-link {
+			--padding-right: 2rem;
+			width: 18rem;
+		}
+
 		nav {
 			display: grid;
 			grid-template-columns: auto 1fr 1fr;
