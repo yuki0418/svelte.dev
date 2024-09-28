@@ -36,19 +36,24 @@
 
 <aside class="on-this-page">
 	<label>
-		<input type="checkbox" checked aria-label="Toggle 'on this page' menu" />
+		<input type="checkbox" aria-label="Toggle 'on this page' menu" />
 		On this page
 	</label>
 
 	<nav>
-		<!-- TODO hide top link on mobile -->
-		<a href="/{document.slug}" class:active={current === ''}>
-			{document.metadata.title}
-		</a>
+		<ul>
+			<li>
+				<a href="/{document.slug}" class:active={current === ''}>
+					{document.metadata.title}
+				</a>
+			</li>
 
-		{#each document.sections as section}
-			<a href="#{section.slug}" class:active={current === section.slug}>{section.title}</a>
-		{/each}
+			{#each document.sections as section}
+				<li>
+					<a href="#{section.slug}" class:active={current === section.slug}>{section.title}</a>
+				</li>
+			{/each}
+		</ul>
 	</nav>
 </aside>
 
@@ -57,15 +62,18 @@
 		nav {
 			padding-top: 0.8rem;
 
-			a {
-				display: block;
-				color: var(--sk-text-3);
-				box-shadow: none; /* unfortunate hack to unset some other CSS */
+			ul {
+				margin: 0;
+				list-style: none;
+			}
 
-				/* Only show the title link if it's in the sidebar */
-				&:first-child {
-					display: none;
-				}
+			/* Only show the title link if it's in the sidebar */
+			li:first-child {
+				display: none;
+			}
+
+			a {
+				color: var(--sk-text-3);
 			}
 		}
 
@@ -76,16 +84,23 @@
 
 		@media (max-width: 1199px) {
 			margin: 4rem 0;
-			background: var(--sk-back-3);
-			padding: 1rem;
 
-			&:not(:has(a:nth-child(2))) {
+			&:not(:has(li:nth-child(2))) {
 				/* hide widget if there are no subheadings */
 				display: none;
 			}
 
 			label {
 				position: relative;
+				display: flex;
+				align-items: center;
+				background: url($lib/icons/contents.svg) 0 50% no-repeat;
+				background-size: 2rem 2rem;
+				padding: 0.2rem 0 0 3rem;
+				height: 3rem;
+				font-size: var(--sk-text-xs);
+				text-transform: uppercase;
+				color: var(--sk-text-4);
 
 				&::before {
 					content: '';
@@ -96,14 +111,14 @@
 					height: 1em;
 					background: url($lib/icons/chevron.svg);
 					background-size: contain;
-					rotate: 0deg;
+					rotate: -90deg;
 					transition: rotate 0.2s;
 				}
 			}
 
 			label:has(:checked) {
 				&::before {
-					rotate: -90deg;
+					rotate: 90deg;
 				}
 
 				& + nav {
@@ -122,6 +137,7 @@
 
 			nav {
 				display: none;
+				padding: 0 0 0 3rem;
 			}
 		}
 
@@ -151,8 +167,8 @@
 			nav {
 				display: block;
 
-				a:first-child {
-					display: block;
+				li:first-child {
+					display: list-item;
 				}
 
 				a.active {
