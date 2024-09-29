@@ -138,13 +138,12 @@ export async function render_content_markdown(
 			const cached_snippet = SNIPPET_CACHE.get(source + language + current);
 			if (cached_snippet.code) return cached_snippet.code;
 
-			/** @type {SnippetOptions} */
-			const options = { file: null, link: null, copy: true };
+			const options: SnippetOptions = { file: null, link: null, copy: true };
 
 			source = collect_options(source, options);
 			source = adjust_tab_indentation(source, language);
 
-			let version_class = '';
+			let version_class: 'ts-version' | 'js-version' | '' = '';
 			if (/^generated-(ts|svelte)$/.test(language)) {
 				language = language.replace('generated-', '');
 				version_class = 'ts-version';
