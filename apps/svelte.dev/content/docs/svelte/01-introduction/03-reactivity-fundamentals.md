@@ -79,12 +79,12 @@ As with `$state`, you can mark class fields as `$derived`.
 >
 > ```svelte
 > <script>
-> let count = 0;
-> $: doubled = count * 2;
+> 	let count = 0;
+> 	$: doubled = count * 2;
 > </script>
 >
 > <button on:click={() => count++}>
-> {doubled}
+> 	{doubled}
 > </button>
 >
 > <p>{count} doubled is {doubled}</p>
