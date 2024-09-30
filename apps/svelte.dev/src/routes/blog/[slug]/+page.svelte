@@ -53,7 +53,7 @@
 
 	h1 {
 		font-size: 4rem;
-		font-weight: 400;
+		font-weight: 500;
 	}
 
 	.standfirst {
