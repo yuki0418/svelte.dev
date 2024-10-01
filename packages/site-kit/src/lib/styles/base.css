@@ -146,9 +146,13 @@ blockquote :last-child {
 }
 
 /*  buttons -------------------------------- */
+input,
 button {
 	font-family: var(--sk-font-ui);
 	font-size: inherit;
+}
+
+button {
 	background-color: transparent;
 	border: none;
 	color: currentColor;
