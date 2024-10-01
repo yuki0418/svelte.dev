@@ -1,10 +1,55 @@
 <script lang="ts">
+	import { afterNavigate } from '$app/navigation';
 	import type { Snippet } from 'svelte';
+	import { prefers_ts } from '../stores/prefers_ts';
+	import { fix_position } from '../actions/utils';
 
 	let { children }: { children: Snippet } = $props();
+
+	let container: HTMLElement;
+
+	afterNavigate(update);
+
+	function update() {
+		const inputs = container.querySelectorAll('.ts-toggle') as NodeListOf<HTMLInputElement>;
+
+		for (const input of inputs) {
+			input.checked = $prefers_ts;
+		}
+	}
+
+	function toggle(e: Event) {
+		if ((e.target as HTMLElement).classList.contains('ts-toggle')) {
+			const input = e.target as HTMLInputElement;
+			$prefers_ts = input.checked;
+			fix_position(input, update);
+		}
+	}
+
+	async function copy(e: Event) {
+		if ((e.target as HTMLButtonElement).classList.contains('copy-to-clipboard')) {
+			const parent = e
+				.composedPath()
+				.find((node) => (node as HTMLElement).classList.contains('code-block')) as HTMLElement;
+
+			const ts = !!parent.querySelector('.ts-toggle:checked');
+			const code = parent.querySelector(`pre:${ts ? 'last' : 'first'}-of-type code`) as HTMLElement;
+
+			let result = '';
+			for (const node of code.childNodes ?? []) {
+				if (!(node as HTMLElement).classList.contains('deleted')) {
+					result += node.textContent!.trimEnd() + '\n';
+				}
+			}
+
+			navigator.clipboard.writeText(result.trim());
+		}
+	}
 </script>
 
-<div class="text">{@render children()}</div>
+<div onclickcapture={copy} onchangecapture={toggle} bind:this={container} class="text">
+	{@render children()}
+</div>
 
 <style>
 	.text :global {
@@ -49,64 +94,190 @@
 
 		.code-block {
 			position: relative;
+			box-shadow: 1px 2px 1rem hsla(0 0 0 / 0.08);
+			border-radius: var(--sk-border-radius);
+			overflow: hidden;
+			margin: 2rem 0;
 
-			.filename {
-				content: attr(data-file);
-				display: block;
+			.controls {
+				--height: 3.6rem;
+				display: flex;
+				align-items: center;
+				position: absolute;
+				top: 0;
+				height: var(--height);
+				padding: 0.3rem;
 				width: 100%;
-				font-family: var(--sk-font-mono);
-				font-size: 1.2rem;
-				font-weight: 400;
-				padding: 1rem 1rem 0.8rem 1rem;
-				color: var(--sk-text-2);
-				background: var(--sk-back-4);
-				border-radius: var(--sk-border-radius) var(--sk-border-radius) 0 0;
+				z-index: 2;
+				justify-content: end;
 				box-sizing: border-box;
+
+				&:has(.filename) {
+					position: relative;
+					background: var(--sk-back-4);
+				}
+
+				.filename {
+					content: attr(data-file);
+					display: block;
+					flex: 1;
+					font-family: var(--sk-font-mono);
+					font-size: 1.2rem;
+					font-weight: 400;
+					padding: 0 1rem;
+					color: var(--sk-text-2);
+
+					&::after {
+						content: attr(data-ext);
+					}
+				}
+
+				&:has(.ts-toggle:checked) {
+					.filename[data-ext='.js']::after {
+						content: '.ts';
+					}
+				}
+
+				.ts-toggle {
+					appearance: none;
+					display: flex;
+					align-items: center;
+					height: calc(var(--height) - 0.6rem);
+					outline-offset: 0;
+					border-radius: var(--sk-border-radius);
+					padding: 0 0.4rem;
+
+					&::before,
+					&::after {
+						width: 2rem;
+						display: flex;
+						justify-content: center;
+						align-items: center;
+						font-size: 1.2rem;
+						font-family: var(--sk-font-mono);
+						color: var(--sk-text-2);
+					}
+
+					&::before {
+						content: 'JS';
+					}
+
+					&::after {
+						content: 'TS';
+						border-left: none;
+						opacity: 0.3;
+					}
+
+					&:checked {
+						&::before {
+							opacity: 0.3;
+						}
+
+						&::after {
+							opacity: 1;
+						}
+					}
+				}
+
+				.copy-to-clipboard {
+					position: relative;
+					height: calc(var(--height) - 0.6rem);
+					aspect-ratio: 1;
+					border-radius: var(--sk-border-radius);
+
+					&[disabled] {
+						opacity: 1;
+					}
+
+					&::before,
+					&::after {
+						content: '';
+						display: block;
+						position: absolute;
+						width: 100%;
+						height: 100%;
+						left: 0;
+						top: 0;
+						background: no-repeat 50% 50% / 1.6rem 1.6rem;
+						transition: opacity 0.2s;
+						transition-delay: 0.6s;
+					}
+
+					&::before {
+						background-image: url(../icons/copy-to-clipboard-light.svg);
+					}
+
+					&::after {
+						background-image: url(../icons/check-light.svg);
+						opacity: 0;
+
+						html.dark & {
+							background-image: url(../icons/check-dark.svg);
+						}
+					}
+
+					html.dark &::before {
+						background-image: url(../icons/copy-to-clipboard-dark.svg);
+					}
+
+					html.dark &::after {
+						background-image: url(../icons/check-dark.svg);
+					}
+
+					&:active::before {
+						opacity: 0;
+						transition: none;
+					}
+
+					&:active::after {
+						opacity: 1;
+						transition: none;
+					}
+				}
+			}
+
+			&:has(.ts-toggle:checked) pre:first-of-type {
+				display: none;
+			}
+
+			&:has(.ts-toggle:not(:checked)) pre:last-of-type {
+				display: none;
 			}
 
 			pre {
-				margin-top: 0;
-				border-radius: 0 0 var(--sk-border-radius) var(--sk-border-radius);
-			}
-		}
-
-		pre {
-			position: relative;
-			margin: 1em 0;
-			width: 100%;
-			padding: 1rem;
-			box-sizing: border-box;
-			color: var(--sk-code-base);
-			border-radius: var(--sk-border-radius);
-			font-size: var(--sk-text-s);
-			overflow-x: auto;
-
-			code {
-				display: block;
-				padding: 0;
+				position: relative;
 				margin: 0;
-				top: 0;
 				width: 100%;
-				background: transparent;
-			}
+				padding: 0.7rem 1rem;
+				box-sizing: border-box;
+				color: var(--sk-code-base);
+				border-radius: var(--sk-border-radius);
+				font-size: var(--sk-text-s);
+				overflow-x: auto;
 
-			a:hover {
-				border-bottom: 1px solid var(--sk-theme-1);
-				text-decoration: none;
-			}
+				code {
+					display: block;
+					padding: 0;
+					margin: 0;
+					top: 0;
+					width: 100%;
+					background: transparent;
+				}
 
-			/* TODO what is this for? */
-			&.border {
-				border-left: 5px solid var(--sk-theme-2);
-			}
+				a:hover {
+					border-bottom: 1px solid var(--sk-theme-1);
+					text-decoration: none;
+				}
 
-			&.language-diff code {
-				color: var(--sk-code-diff-base);
-			}
-		}
+				/* TODO what is this for? */
+				&.border {
+					border-left: 5px solid var(--sk-theme-2);
+				}
 
-		.ts-block pre {
-			margin: 0;
+				&.language-diff code {
+					color: var(--sk-code-diff-base);
+				}
+			}
 		}
 
 		p code {
@@ -115,11 +286,6 @@
 			overflow-x: auto;
 			padding-top: 0;
 			padding-bottom: 0;
-		}
-
-		/* TODO what is this for? */
-		.copy-code-block {
-			box-shadow: 1px 2px 1rem hsla(0 0 0 / 0.08);
 		}
 
 		a:not(.permalink) {

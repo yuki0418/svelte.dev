@@ -6,14 +6,19 @@ import ts from 'typescript';
 import { SHIKI_LANGUAGE_MAP, escape, normalizeSlugify, smart_quotes, transform } from './utils';
 import type { Declaration, TypeElement, Modules } from './index';
 
-type MetadataKeys = 'file' | 'link' | 'copy';
-type SnippetOptions = Record<MetadataKeys, string | boolean | number | null>;
+interface SnippetOptions {
+	file: string | null;
+	link: boolean;
+	copy: boolean;
+}
+
 type TwoslashBanner = (
 	filename: string,
 	content: string,
 	language: string,
 	options: SnippetOptions
 ) => string;
+
 interface RenderContentOptions {
 	twoslashBanner?: TwoslashBanner;
 	modules?: Modules;
@@ -131,26 +136,51 @@ export async function render_content_markdown(
 	const { type_links, type_regex } = create_type_links(modules, resolveTypeLinks);
 	const SNIPPET_CACHE = await create_snippet_cache(cacheCodeSnippets);
 
+	body = await replace_export_type_placeholders(body, modules);
+
+	const conversions = new Map<string, string>();
+
+	for (const [_, language, code] of body.matchAll(/```(js|svelte)\n([\s\S]+?)\n```/g)) {
+		let { source, options } = parse_options(code, language);
+
+		const converted = await generate_ts_from_js(source, language as 'js' | 'svelte', options);
+		if (converted) {
+			conversions.set(source, converted);
+		}
+	}
+
 	return parse({
-		body: await generate_ts_from_js(await replace_export_type_placeholders(body, modules)),
+		body,
 		type_links,
 		code: (raw, language, current) => {
 			const cached_snippet = SNIPPET_CACHE.get(raw + language + current);
 			if (cached_snippet.code) return cached_snippet.code;
 
-			let { source, options } = parse_options(raw);
+			let { source, options } = parse_options(raw, language);
 			source = adjust_tab_indentation(source, language);
 
-			let version_class: 'ts-version' | 'js-version' | '' = '';
-			if (/^generated-(ts|svelte)$/.test(language)) {
-				language = language.replace('generated-', '');
-				version_class = 'ts-version';
-			} else if (/^original-(js|svelte)$/.test(language)) {
-				language = language.replace('original-', '');
-				version_class = 'js-version';
+			const converted = conversions.get(source);
+
+			let html = '<div class="code-block"><div class="controls">';
+
+			if (options.file) {
+				const ext = options.file.slice(options.file.lastIndexOf('.'));
+				if (!ext) throw new Error(`Missing file extension: ${options.file}`);
+
+				html += `<span class="filename" data-ext="${ext}">${options.file.slice(0, -ext.length)}</span>`;
 			}
 
-			let html = syntax_highlight({
+			if (converted) {
+				html += `<input class="ts-toggle" title="Toggle language" type="checkbox" aria-label="Toggle JS/TS">`;
+			}
+
+			if (options.copy) {
+				html += `<button class="copy-to-clipboard" title="Copy to clipboard" aria-label="Copy to clipboard"></button>`;
+			}
+
+			html += '</div>';
+
+			html += syntax_highlight({
 				filename,
 				highlighter,
 				language,
@@ -159,18 +189,20 @@ export async function render_content_markdown(
 				options
 			});
 
-			if (options.file) {
-				html = `<div class="code-block"><span class="filename">${options.file}</span>${html}</div>`;
+			if (converted) {
+				html += syntax_highlight({
+					filename,
+					highlighter,
+					language: language === 'js' ? 'ts' : language,
+					source: converted,
+					twoslashBanner,
+					options
+				});
 			}
 
-			if (options.copy) {
-				html = html.replace(/class=('|")/, `class=$1copy-code-block `);
-			}
+			html += '</div>';
 
-			if (version_class) {
-				html = html.replace(/class=('|")/, `class=$1${version_class} `);
-			}
-
+			// TODO this is currently disabled, we don't have access to `modules`
 			if (type_regex) {
 				type_regex.lastIndex = 0;
 
@@ -188,10 +220,6 @@ export async function render_content_markdown(
 					return `${prefix || ''}${link}`;
 				});
 			}
-
-			html = indent_multiline_comments(html);
-
-			html = html.replace(/\/\*…\*\//g, '…');
 
 			// Save everything locally now
 			SNIPPET_CACHE.save(cached_snippet?.uid, html);
@@ -273,57 +301,31 @@ async function parse({
  * Pre-render step. Takes in all the code snippets, and replaces them with TS snippets if possible
  * May replace the language labels (```js) to custom labels(```generated-ts, ```original-js, ```generated-svelte,```original-svelte)
  */
-async function generate_ts_from_js(markdown: string) {
-	markdown = await async_replace(markdown, /```js\n([\s\S]+?)\n```/g, async ([match, code]) => {
-		if (!code.includes('/// file:')) {
-			// No named file -> assume that the code is not meant to be shown in two versions
-			return match;
-		}
+async function generate_ts_from_js(
+	code: string,
+	language: 'js' | 'svelte',
+	options: SnippetOptions
+) {
+	// No named file -> assume that the code is not meant to be shown in two versions
+	if (!options.file) return;
 
-		if (code.includes('/// file: svelte.config.js')) {
-			// svelte.config.js has no TS equivalent
-			return match;
-		}
+	if (language === 'js') {
+		// config files have no .ts equivalent
+		if (options.file === 'svelte.config.js') return;
 
-		const ts = await convert_to_ts(code);
+		return await convert_to_ts(code.replace(/\/\/\/ file: .+?\n/, ''));
+	}
 
-		if (!ts) {
-			// No changes -> don't show TS version
-			return match;
-		}
+	// Assumption: no module blocks
+	const script = code.match(/<script>([\s\S]+?)<\/script>/);
+	if (!script) return;
 
-		return match.replace('js', 'original-js') + '\n```generated-ts\n' + ts + '```';
-	});
+	const [outer, inner] = script;
+	const ts = await convert_to_ts(inner, '\t', '\n');
 
-	markdown = await async_replace(markdown, /```svelte\n([\s\S]+?)\n```/g, async ([match, code]) => {
-		METADATA_REGEX.lastIndex = 0;
+	if (!ts) return;
 
-		if (!METADATA_REGEX.test(code)) {
-			// No named file -> assume that the code is not meant to be shown in two versions
-			return match;
-		}
-
-		// Assumption: no module blocks
-		const script = code.match(/<script>([\s\S]+?)<\/script>/);
-		if (!script) return match;
-
-		const [outer, inner] = script;
-		const ts = await convert_to_ts(inner, '\t', '\n');
-
-		if (!ts) {
-			// No changes -> don't show TS version
-			return match;
-		}
-
-		return (
-			match.replace('svelte', 'original-svelte') +
-			'\n```generated-svelte\n' +
-			code.replace(outer, `<script lang="ts">\n\t${ts.trim()}\n</script>`) +
-			'\n```'
-		);
-	});
-
-	return markdown;
+	return code.replace(outer, `<script lang="ts">\n\t${ts.trim()}\n</script>`);
 }
 
 function get_jsdoc(node: ts.Node) {
@@ -472,13 +474,15 @@ export async function convert_to_ts(js_code: string, indent = '', offset = '') {
 		printWidth: 100,
 		parser: 'typescript',
 		useTabs: true,
-		singleQuote: true
+		singleQuote: true,
+		trailingComma: 'none'
 	});
 
 	// Indent transformed's each line by 2
 	transformed = transformed
+		.replace(/\n$/, '')
 		.split('\n')
-		.map((line) => indent.repeat(1) + line)
+		.map((line) => indent + line)
 		.join('\n');
 
 	return transformed === js_code ? undefined : transformed.replace(/\n\s*\n\s*\n/g, '\n\n');
@@ -634,7 +638,7 @@ export async function replace_export_type_placeholders(content: string, modules:
 						const markdown = declaration.overloads
 							.map(
 								(overload) =>
-									`<div class="ts-block">${fence(overload.snippet)}` +
+									`<div class="ts-block">${fence(overload.snippet, 'dts')}` +
 									overload.children?.map((v) => stringify(v)).join('\n\n') +
 									`</div>`
 							)
@@ -711,7 +715,7 @@ function stringify_module(module: Modules[0]) {
 		const markdown = declaration.overloads
 			.map(
 				(overload) =>
-					`<div class="ts-block">${fence(overload.snippet)}` +
+					`<div class="ts-block">${fence(overload.snippet, 'dts')}` +
 					overload.children?.map((v) => stringify(v)).join('\n\n') +
 					`</div>`
 			)
@@ -947,22 +951,30 @@ function create_type_links(
 	return { type_regex, type_links };
 }
 
-function parse_options(source: string) {
+function parse_options(source: string, language: string) {
 	METADATA_REGEX.lastIndex = 0;
 
-	const options: SnippetOptions = { file: null, link: null, copy: true };
+	const options: SnippetOptions = { file: null, link: false, copy: language !== 'dts' };
 
-	let copy_value = 'true';
 	source = source.replace(METADATA_REGEX, (_, key, value) => {
-		if (key === 'copy') {
-			copy_value = value;
+		switch (key) {
+			case 'file':
+				options.file = value;
+				break;
+
+			case 'link':
+				options.link = value === 'true';
+
+			case 'copy':
+				options.copy = value === 'true';
+				break;
+
+			default:
+				throw new Error(`Unrecognised option ${key}`);
 		}
-		options[key as MetadataKeys] = value;
+
 		return '';
 	});
-
-	options.link = options.link === 'true';
-	options.copy = copy_value === 'true' || (options.file && copy_value !== 'false');
 
 	return { source, options };
 }
@@ -1090,7 +1102,9 @@ function syntax_highlight({
 		html = replace_blank_lines(highlighted);
 	}
 
-	return html;
+	return indent_multiline_comments(html)
+		.replace(/\/\*…\*\//g, '…')
+		.replace('<pre', `<pre data-language="${language}"`);
 }
 
 function indent_multiline_comments(str: string) {

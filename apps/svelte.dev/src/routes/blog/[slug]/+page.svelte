@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { copy_code_descendants, ts_js_select } from '@sveltejs/site-kit/actions';
 	import { Text } from '@sveltejs/site-kit/components';
 	import { setupDocsHovers } from '@sveltejs/site-kit/docs';
 
@@ -22,7 +21,7 @@
 </svelte:head>
 
 <div class="content">
-	<article class="post listify text" use:ts_js_select use:copy_code_descendants>
+	<article class="post listify text">
 		<h1>{data.metadata.title}</h1>
 		<p class="standfirst">{data.metadata.description}</p>
 
