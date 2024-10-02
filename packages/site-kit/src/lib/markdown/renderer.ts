@@ -259,42 +259,50 @@ async function parse({
 	// from linking to themselves
 	let current = '';
 
-	/** @type {string} */
-	const content = await transform(body, {
-		text: smart_quotes,
-		heading(html, level, raw) {
-			const title = html
+	return await transform(body, {
+		text(token) {
+			// @ts-expect-error I think this is a bug in marked — some text tokens have children,
+			// but that's not reflected in the types. In these cases we can't just use `token.tokens`
+			// because that will result in e.g. `<code>` elements not being generated
+			if (token.tokens) {
+				// @ts-expect-error
+				return this.parser!.parseInline(token.tokens);
+			}
+
+			return smart_quotes(token.text);
+		},
+		heading({ tokens, depth, raw }) {
+			const text = this.parser!.parseInline(tokens);
+
+			const title = text
 				.replace(/<\/?code>/g, '')
 				.replace(/&quot;/g, '"')
 				.replace(/&lt;/g, '<')
 				.replace(/&gt;/g, '>');
-
 			current = title;
-
 			const normalized = normalizeSlugify(raw);
-
-			headings[level - 1] = normalized;
-			headings.length = level;
-
+			headings[depth - 1] = normalized;
+			headings.length = depth;
 			const slug = headings.filter(Boolean).join('-');
-
-			return `<h${level} id="${slug}">${html.replace(
+			return `<h${depth} id="${slug}">${text.replace(
 				/<\/?code>/g,
 				''
-			)}<a href="#${slug}" class="permalink"><span class="visually-hidden">permalink</span></a></h${level}>`;
+			)}<a href="#${slug}" class="permalink"><span class="visually-hidden">permalink</span></a></h${depth}>`;
 		},
-		code: (source, language) => code(source, language ?? 'js', current),
-		codespan,
-		blockquote: (content) => {
+		code({ text, lang }) {
+			return code(text, lang ?? 'js', current);
+		},
+		codespan({ text }) {
+			return codespan(text);
+		},
+		blockquote(token) {
+			let content = this.parser?.parse(token.tokens) ?? '';
 			if (content.includes('[!LEGACY]')) {
 				content = `<details class="legacy"><summary>Legacy mode</summary>${content.replace('[!LEGACY]', '')}</details>`;
 			}
-
 			return `<blockquote>${content}</blockquote>`;
 		}
 	});
-
-	return content;
 }
 
 /**
