@@ -123,10 +123,7 @@ export function extract_frontmatter(markdown: string) {
 
 	// Prettier might split things awkwardly, so we can't just go line-by-line
 
-	/** @type {string} */
 	let key = '';
-
-	/** @type {string} */
 	let value = '';
 
 	for (const line of frontmatter.split('\n')) {
