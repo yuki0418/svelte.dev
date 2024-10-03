@@ -144,7 +144,6 @@
 					align-items: center;
 					height: calc(var(--height) - 0.6rem);
 					outline-offset: 0;
-					border-radius: var(--sk-border-radius);
 					padding: 0 0.4rem;
 
 					&::before,
@@ -343,12 +342,12 @@
 			li::before {
 				content: '';
 				position: absolute;
-				margin-top: 0.8rem;
-				margin-left: -1.8rem;
+				top: 1.4rem;
+				left: -1.8rem;
 				background-color: var(--sk-back-5);
 				width: 0.6rem;
 				height: 0.6rem;
-				border-radius: 2px;
+				border-radius: 50%;
 				opacity: 0.7;
 			}
 
@@ -364,7 +363,6 @@
 		li {
 			position: relative;
 			max-width: calc(var(--sk-line-max-width) - var(--list-padding));
-			line-height: 1.5;
 			margin: 0 0 0.5em 0;
 		}
 

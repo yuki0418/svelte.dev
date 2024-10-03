@@ -124,9 +124,7 @@
 	}
 
 	:focus-visible {
-		outline: none;
-		border: 2px solid var(--sk-theme-3) !important;
-		border-radius: 2px;
+		outline-offset: -2px;
 	}
 
 	input {
