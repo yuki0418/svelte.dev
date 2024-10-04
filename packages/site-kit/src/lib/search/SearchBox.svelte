@@ -405,6 +405,8 @@ It appears when the user clicks on the `Search` component or presses the corresp
 		}
 
 		.recent {
+			padding-bottom: 1rem;
+
 			a {
 				font-size: var(--sk-font-size-ui-medium);
 			}
