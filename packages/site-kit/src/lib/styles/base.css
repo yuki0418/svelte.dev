@@ -34,9 +34,6 @@ body {
 	scrollbar-width: thin;
 	scrollbar-color: var(--sk-scrollbar) transparent;
 	-webkit-tap-highlight-color: hsla(var(--sk-theme-1-hsl), 0.1);
-
-	transition: 0.5s var(--quint-out);
-	transition-property: background, background-color, background-image, border;
 }
 
 *:focus-visible {
@@ -165,6 +162,27 @@ button > svg {
 	width: 2rem !important;
 	height: 2rem !important;
 	stroke: currentColor !important;
+}
+
+.raised {
+	border-radius: var(--sk-border-radius);
+	border-style: solid;
+	border-color: var(--sk-raised-color);
+	border-width: var(--sk-raised-width);
+
+	&:hover {
+		border-color: var(--sk-raised-hover-color);
+	}
+
+	&:active {
+		border-color: var(--sk-raised-active-color);
+		border-width: var(--sk-raised-active-width);
+	}
+
+	&:disabled {
+		border-color: transparent;
+		border-width: 1px;
+	}
 }
 
 /*  links ------------------------------------- */

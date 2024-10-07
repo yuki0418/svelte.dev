@@ -101,17 +101,45 @@
 					color: var(--sk-text-3);
 				}
 
-				&::before {
+				&::before,
+				&::after {
 					content: '';
 					position: absolute;
 					right: 0;
-					top: calc(50% - 0.5em);
-					width: 2rem;
-					height: 2rem;
-					background: url($lib/icons/chevron.svg);
-					background-size: contain;
+					top: 0.3rem;
+					width: 2.4rem;
+					height: 2.4rem;
+				}
+
+				&::before {
+					border-radius: var(--sk-border-radius);
+					border-style: solid;
+					border-color: var(--sk-raised-color);
+					border-width: var(--sk-raised-width);
+				}
+
+				&:hover::before {
+					border-color: var(--sk-raised-hover-color);
+				}
+
+				&:active::before {
+					border-color: var(--sk-raised-active-color);
+					border-width: var(--sk-raised-active-width);
+				}
+
+				&::after {
+					background: url($lib/icons/chevron.svg) 50% 50% no-repeat;
+					background-size: 2rem;
+					top: 0.4rem;
+					right: 0.2rem;
 					rotate: -90deg;
 					transition: rotate 0.2s;
+					transition: rotate 0.2s;
+				}
+
+				&:active::after {
+					top: 0.5rem;
+					right: 0.1rem;
 				}
 
 				h3 {
@@ -124,7 +152,7 @@
 			}
 
 			label:has(:checked) {
-				&::before {
+				&::after {
 					rotate: 90deg;
 				}
 

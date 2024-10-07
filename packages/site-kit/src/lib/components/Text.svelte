@@ -90,10 +90,12 @@
 
 		.code-block {
 			position: relative;
-			box-shadow: 1px 2px 1rem hsla(0 0 0 / 0.08);
+			background: var(--sk-back-2);
+			border: 1px solid var(--sk-back-5);
 			border-radius: var(--sk-border-radius);
 			overflow: hidden;
 			margin: 2rem 0;
+			/* background: var(--sk-back-3); */
 
 			.controls {
 				--height: 3.6rem;
@@ -102,7 +104,8 @@
 				position: absolute;
 				top: 0;
 				height: var(--height);
-				padding: 0.3rem;
+				padding: 0.3rem 0.5rem 0.3rem 1rem;
+				gap: 0.5rem;
 				width: 100%;
 				z-index: 2;
 				justify-content: end;
@@ -110,17 +113,20 @@
 
 				&:has(.filename) {
 					position: relative;
-					background: var(--sk-back-4);
 				}
 
 				.filename {
 					content: attr(data-file);
 					display: block;
+					position: relative;
+					top: 0.1rem;
 					flex: 1;
-					font-family: var(--sk-font-mono);
-					font-size: var(--sk-font-size-code);
-					padding: 0 1rem;
-					color: var(--sk-text-2);
+					font-family: var(--sk-font-ui);
+					font-size: var(--sk-font-size-ui-small);
+					color: var(--sk-text-4);
+					text-overflow: ellipsis;
+					overflow: hidden;
+					white-space: nowrap;
 
 					&::after {
 						content: attr(data-ext);
@@ -137,9 +143,9 @@
 					appearance: none;
 					display: flex;
 					align-items: center;
-					height: calc(var(--height) - 0.6rem);
+					height: calc(var(--height) - 1rem);
 					outline-offset: 0;
-					padding: 0 0.4rem;
+					padding: 0 0.6rem;
 
 					&::before,
 					&::after {
@@ -175,7 +181,7 @@
 
 				.copy-to-clipboard {
 					position: relative;
-					height: calc(var(--height) - 0.6rem);
+					height: calc(var(--height) - 1rem);
 					aspect-ratio: 1;
 					border-radius: var(--sk-border-radius);
 
@@ -420,18 +426,46 @@
 		}
 
 		details.legacy {
+			&::before,
 			&::after {
 				content: '';
-				background: url(../icons/chevron.svg);
-				background-size: contain;
 				position: absolute;
-				right: 0.5rem;
-				top: 0.5rem;
-				width: 2rem;
-				height: 2rem;
+				right: 0.6rem;
+				top: 0.1rem;
+				width: 2.4rem;
+				height: 2.4rem;
+				pointer-events: none;
+			}
+
+			&::before {
+				border-radius: var(--sk-border-radius);
+				border-style: solid;
+				border-color: var(--sk-raised-color);
+				border-width: var(--sk-raised-width);
+			}
+
+			&:hover::before {
+				border-color: var(--sk-raised-hover-color);
+			}
+
+			&:has(summary:active)::before {
+				border-color: var(--sk-raised-active-color);
+				border-width: var(--sk-raised-active-width);
+			}
+
+			&::after {
+				background: url($lib/icons/chevron.svg) 50% 50% no-repeat;
+				background-size: 2rem;
 				rotate: -90deg;
 				transition: rotate 0.2s;
-				pointer-events: none;
+				transition: rotate 0.2s;
+				top: 0.2rem;
+				right: 0.8rem;
+			}
+
+			&:has(summary:active)::after {
+				top: 0.3rem;
+				right: 0.7rem;
 			}
 
 			& > summary {
@@ -453,7 +487,7 @@
 					position: absolute;
 					display: flex;
 					align-items: center;
-					right: 3rem;
+					right: 4rem;
 					top: 0;
 					height: 100%;
 					content: 'show all';

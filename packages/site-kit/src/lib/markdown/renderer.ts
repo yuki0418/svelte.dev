@@ -171,11 +171,11 @@ export async function render_content_markdown(
 			}
 
 			if (converted) {
-				html += `<input class="ts-toggle" checked title="Toggle language" type="checkbox" aria-label="Toggle JS/TS">`;
+				html += `<input class="ts-toggle raised" checked title="Toggle language" type="checkbox" aria-label="Toggle JS/TS">`;
 			}
 
 			if (options.copy) {
-				html += `<button class="copy-to-clipboard" title="Copy to clipboard" aria-label="Copy to clipboard"></button>`;
+				html += `<button class="copy-to-clipboard raised" title="Copy to clipboard" aria-label="Copy to clipboard"></button>`;
 			}
 
 			html += '</div>';
@@ -298,7 +298,7 @@ async function parse({
 		blockquote(token) {
 			let content = this.parser?.parse(token.tokens) ?? '';
 			if (content.includes('[!LEGACY]')) {
-				content = `<details class="legacy"><summary>Legacy mode</summary>${content.replace('[!LEGACY]', '')}</details>`;
+				content = `<details class="legacy"><summary><label>Legacy mode <button class="raised"></button></label></summary>${content.replace('[!LEGACY]', '')}</details>`;
 			}
 			return `<blockquote>${content}</blockquote>`;
 		}
