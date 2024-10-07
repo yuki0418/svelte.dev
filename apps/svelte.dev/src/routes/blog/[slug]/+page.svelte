@@ -65,6 +65,8 @@
 				margin: 0 0 1em 1em;
 				width: 16rem;
 				z-index: 2;
+				color: var(--sk-text-4);
+				font-size: var(--sk-font-size-body-small);
 
 				p {
 					color: var(--sk-text-4);
