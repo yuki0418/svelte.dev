@@ -91,6 +91,7 @@
 				margin: 2em 0;
 				border-radius: var(--sk-border-radius);
 				border: 0.8rem solid var(--sk-theme-4);
+				box-shadow: 1px 2px 1rem hsla(0 0 0 / 0.08);
 			}
 
 			blockquote {
