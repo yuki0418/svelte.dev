@@ -310,7 +310,7 @@ function get_jsdoc(node: ts.Node) {
  * Transforms a JS code block into a TS code block by turning JSDoc into type annotations.
  * Due to pragmatism only the cases currently used in the docs are implemented.
  */
-export async function convert_to_ts(js_code: string, indent = '', offset = '') {
+async function convert_to_ts(js_code: string, indent = '', offset = '') {
 	js_code = js_code
 		.replaceAll('// @filename: index.js', '// @filename: index.ts')
 		.replace(/(\/\/\/ .+?\.)js/, '$1ts')
