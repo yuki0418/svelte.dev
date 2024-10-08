@@ -94,14 +94,7 @@ Vercel supports [Incremental Static Regeneration](https://vercel.com/docs/increm
 To add ISR to a route, include the `isr` property in your `config` object:
 
 ```js
-/// file: blog/[slug]/+page.server.js
-// @filename: ambient.d.ts
-declare module '$env/static/private' {
-	export const BYPASS_TOKEN: string;
-}
-
-// @filename: index.js
-// ---cut---
+// @errors: 2664
 import { BYPASS_TOKEN } from '$env/static/private';
 
 export const config = {

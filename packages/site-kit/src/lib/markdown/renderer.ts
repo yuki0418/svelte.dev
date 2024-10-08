@@ -709,11 +709,13 @@ async function syntax_highlight({
 				theme
 			})
 		);
-	} else if (/^(js|ts)/.test(language)) {
+	} else if (/^(js|ts)$/.test(language)) {
 		try {
-			const banner = twoslashBanner?.(filename, source, language, options);
+			let banner = twoslashBanner?.(filename, source, language, options);
 
 			if (banner) {
+				banner = '// @filename: injected.d.ts\n' + banner;
+
 				if (source.includes('// @filename:')) {
 					source = source.replace('// @filename:', `${banner}\n\n// @filename:`);
 				} else {
@@ -738,10 +740,9 @@ async function syntax_highlight({
 				]
 			});
 		} catch (e) {
-			console.error(`Error compiling snippet in ${filename}`);
-			// @ts-ignore
-			console.error(e.code);
-			throw e;
+			console.error((e as Error).message);
+			console.warn(source);
+			throw new Error(`Error compiling snippet in ${filename}`);
 		}
 
 		html = replace_blank_lines(html);

@@ -51,6 +51,8 @@ Populate a route ID with params to resolve a pathname.
 
 ```js
 // @errors: 7031
+import { resolveRoute } from '$app/paths';
+
 resolveRoute(
 	`/blog/[slug]/[...somethingElse]`,
 	{
