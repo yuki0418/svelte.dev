@@ -27,7 +27,7 @@ const packages: Package[] = [
 		name: 'svelte',
 		local: `${REPOS}/svelte`,
 		repo: 'sveltejs/svelte',
-		branch: 'main',
+		branch: 'docs-fixes',
 		pkg: 'packages/svelte',
 		docs: 'documentation/docs',
 		process_modules: async (modules: Modules) => {
@@ -82,29 +82,6 @@ const packages: Package[] = [
 					types: [],
 					exempt: true
 				});
-			}
-
-			// TODO JSdoc points to kit.svelte.dev structure, rewrite those for now
-			for (const module of modules) {
-				replace_strings(module, (str) =>
-					str
-						.replace(/(https:\/\/kit.svelte.dev)?\/docs\/([^#)]+)/g, (_, __, slug) =>
-							slug === 'cli' || slug === 'modules' || slug === 'types' || slug === 'configuration'
-								? `/docs/kit/reference/${slug}`
-								: _
-						)
-						.replace(
-							/\/docs\/kit\/reference\/modules#([^-]+)-([^-]+)-([^-)]+)/g,
-							(_, p1, p2, p3) => {
-								if (p1 === '$env') {
-									return `/docs/kit/reference/$env-all#${p1}-${p2}-${p3}`;
-								} else {
-									return `/docs/kit/reference/${p1 === 'sveltejs' ? '@sveltejs' : p1}-${p2}#${p3}`;
-								}
-							}
-						)
-						.replace(/\/docs\/cli/g, '/docs/kit/reference/cli')
-				);
 			}
 
 			const svelte_kit_module = modules.find((m) => m.name === '@sveltejs/kit');
