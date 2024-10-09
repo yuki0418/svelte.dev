@@ -305,20 +305,8 @@ export default app;`
 		flex: 0;
 		gap: 1rem;
 
-		&::after {
-			content: '';
-			position: absolute;
-			left: 0;
-			bottom: -4px;
-			width: 100%;
-			height: 4px;
-			z-index: 2;
-			background: linear-gradient(to bottom, rgba(0, 0, 0, 0.05), transparent);
-		}
-
 		@media (min-width: 800px) {
-			padding-top: 0;
-			padding-bottom: 1rem;
+			padding-top: 1rem;
 		}
 	}
 
@@ -383,6 +371,7 @@ export default app;`
 		border-radius: var(--sk-border-radius);
 		color: currentColor;
 		font-family: var(--sk-font-ui);
+		width: 0;
 		flex: 1;
 		padding: 0.2rem 0.6rem;
 		height: 3.2rem;
