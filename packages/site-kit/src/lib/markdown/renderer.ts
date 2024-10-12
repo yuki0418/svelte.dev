@@ -15,12 +15,7 @@ interface SnippetOptions {
 	copy: boolean;
 }
 
-type TwoslashBanner = (
-	filename: string,
-	content: string,
-	language: string,
-	options: SnippetOptions
-) => string;
+type TwoslashBanner = (filename: string, content: string) => string;
 
 // Supports js, svelte, yaml files
 const METADATA_REGEX =
@@ -191,9 +186,11 @@ const snippets = await create_snippet_cache();
 export async function render_content_markdown(
 	filename: string,
 	body: string,
-	{ twoslashBanner }: { twoslashBanner?: TwoslashBanner } = {}
+	options: { check?: boolean },
+	twoslashBanner?: TwoslashBanner
 ) {
 	const headings: string[] = [];
+	const { check = true } = options;
 
 	return await transform(body, {
 		async walkTokens(token) {
@@ -207,11 +204,17 @@ export async function render_content_markdown(
 				let { source, options } = parse_options(token.text, token.lang);
 				source = adjust_tab_indentation(source, token.lang);
 
-				const match = /((?:[\s\S]+)\/\/ ---cut---\n)?([\s\S]+)/.exec(source)!;
+				let prelude = '';
 
-				const prelude = match[1];
+				if ((token.lang === 'js' || token.lang === 'ts') && check) {
+					const match = /((?:[\s\S]+)\/\/ ---cut---\n)?([\s\S]+)/.exec(source)!;
+					[, prelude = '// ---cut---\n', source] = match;
 
-				source = match[2].replace(
+					const banner = twoslashBanner?.(filename, source);
+					if (banner) prelude = '// @filename: injected.d.ts\n' + banner + '\n' + prelude;
+				}
+
+				source = source.replace(
 					/(\+\+\+|---|:::)/g,
 					(_, delimiter: keyof typeof delimiter_substitutes) => {
 						return delimiter_substitutes[delimiter];
@@ -242,24 +245,16 @@ export async function render_content_markdown(
 
 				html += '</div>';
 
-				html += await syntax_highlight({
-					prelude,
-					filename,
-					language: token.lang,
-					source,
-					twoslashBanner,
-					options
-				});
+				html += await syntax_highlight({ filename, language: token.lang, prelude, source, check });
 
 				if (converted) {
-					html += await syntax_highlight({
-						prelude,
-						filename,
-						language: token.lang === 'js' ? 'ts' : token.lang,
-						source: converted,
-						twoslashBanner,
-						options
-					});
+					const language = token.lang === 'js' ? 'ts' : token.lang;
+
+					if (language === 'ts') {
+						prelude = prelude.replace(/(\/\/ @filename: .+)\.js$/gm, '$1.ts');
+					}
+
+					html += await syntax_highlight({ filename, language, prelude, source: converted, check });
 				}
 
 				html += '</div>';
@@ -318,7 +313,6 @@ export async function render_content_markdown(
 
 /**
  * Pre-render step. Takes in all the code snippets, and replaces them with TS snippets if possible
- * May replace the language labels (```js) to custom labels(```generated-ts, ```original-js, ```generated-svelte,```original-svelte)
  */
 async function generate_ts_from_js(
 	code: string,
@@ -328,32 +322,23 @@ async function generate_ts_from_js(
 	// No named file -> assume that the code is not meant to be shown in two versions
 	if (!options.file) return;
 
-	if (language === 'js') {
-		// config files have no .ts equivalent
-		if (options.file === 'svelte.config.js') return;
+	// config files have no .ts equivalent
+	if (options.file === 'svelte.config.js') return;
 
-		let [before, after] = code.split('// ---cut---\n');
+	if (language === 'svelte') {
+		// Assumption: no module blocks
+		const script = code.match(/<script>([\s\S]+?)<\/script>/);
+		if (!script) return;
 
-		if (!after) {
-			after = before;
-			before = '';
-		}
+		const [outer, inner] = script;
+		const ts = await convert_to_ts(inner, '\t', '\n');
 
-		const converted = await convert_to_ts(after.replace(/\/\/\/ file: .+?\n/, ''));
+		if (!ts) return;
 
-		return converted && [before, converted].join('// ---cut---\n');
+		return code.replace(outer, `<script lang="ts">${ts}</script>`);
 	}
 
-	// Assumption: no module blocks
-	const script = code.match(/<script>([\s\S]+?)<\/script>/);
-	if (!script) return;
-
-	const [outer, inner] = script;
-	const ts = await convert_to_ts(inner, '\t', '\n');
-
-	if (!ts) return;
-
-	return code.replace(outer, `<script lang="ts">${ts}</script>`);
+	return await convert_to_ts(code);
 }
 
 function get_jsdoc(node: ts.Node) {
@@ -371,15 +356,6 @@ async function convert_to_ts(js_code: string, indent = '', offset = '') {
 		.replace(/(\/\/\/ .+?\.)js/, '$1ts')
 		// *\/ appears in some JsDoc comments in d.ts files due to the JSDoc-in-JSDoc problem
 		.replace(/\*\\\//g, '*/');
-
-	// TODO temp
-	if (js_code.includes('// ---cut---')) {
-		throw new Error('unexpected cut directive');
-	}
-
-	if (js_code.includes('/// file:')) {
-		throw new Error('unexpected file directive');
-	}
 
 	const ast = ts.createSourceFile(
 		'filename.ts',
@@ -653,15 +629,13 @@ async function syntax_highlight({
 	source,
 	filename,
 	language,
-	twoslashBanner,
-	options
+	check
 }: {
 	prelude: string;
 	source: string;
 	filename: string;
 	language: string;
-	twoslashBanner?: TwoslashBanner;
-	options: SnippetOptions;
+	check: boolean;
 }) {
 	let html = '';
 
@@ -673,18 +647,6 @@ async function syntax_highlight({
 			})
 		);
 	} else if (language === 'js' || language === 'ts') {
-		let banner = twoslashBanner?.(filename, source, language, options);
-
-		if (banner) {
-			banner = '// @filename: injected.d.ts\n' + banner;
-		}
-
-		prelude = (banner ?? '') + '\n' + (prelude ?? '// ---cut---\n');
-
-		if (language === 'ts') {
-			prelude = prelude.replace(/(\/\/ @filename: .+)\.js$/gm, '$1.ts');
-		}
-
 		/** We need to stash code wrapped in `---` highlights, because otherwise TS will error on e.g. bad syntax, duplicate declarations */
 		const redactions: string[] = [];
 
@@ -692,19 +654,22 @@ async function syntax_highlight({
 			redactions.push(content);
 			return ' '.repeat(content.length);
 		});
+
 		try {
 			html = await codeToHtml(prelude + redacted, {
 				lang: 'ts',
 				theme,
-				transformers: [
-					transformerTwoslash({
-						twoslashOptions: {
-							compilerOptions: {
-								types: ['svelte', '@sveltejs/kit']
-							}
-						}
-					})
-				]
+				transformers: check
+					? [
+							transformerTwoslash({
+								twoslashOptions: {
+									compilerOptions: {
+										types: ['svelte', '@sveltejs/kit']
+									}
+								}
+							})
+						]
+					: []
 			});
 
 			html = html.replace(/ {27,}/g, () => redactions.shift()!);
