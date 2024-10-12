@@ -253,7 +253,6 @@
 	}
 
 	.fake * {
-		/* font-family: var(--font-mono) !important; */
 		color: #ccc;
 	}
 
