@@ -7,7 +7,6 @@ import * as prettier from 'prettier';
 import { codeToHtml, createCssVariablesTheme } from 'shiki';
 import { transformerTwoslash } from '@shikijs/twoslash';
 import { SHIKI_LANGUAGE_MAP, slugify, smart_quotes, transform } from './utils';
-import type { Modules } from './index';
 import { fileURLToPath } from 'node:url';
 
 interface SnippetOptions {
@@ -201,8 +200,23 @@ export async function render_content_markdown(
 			if (token.type === 'code') {
 				if (snippets.get(token.text)) return;
 
+				if (token.lang === 'diff') {
+					throw new Error('Use +++ and --- annotations instead of diff blocks');
+				}
+
 				let { source, options } = parse_options(token.text, token.lang);
 				source = adjust_tab_indentation(source, token.lang);
+
+				const match = /((?:[\s\S]+)\/\/ ---cut---\n)?([\s\S]+)/.exec(source)!;
+
+				const prelude = match[1];
+
+				source = match[2].replace(
+					/(\+\+\+|---|:::)/g,
+					(_, delimiter: keyof typeof delimiter_substitutes) => {
+						return delimiter_substitutes[delimiter];
+					}
+				);
 
 				const converted =
 					token.lang === 'js' || token.lang === 'svelte'
@@ -229,6 +243,7 @@ export async function render_content_markdown(
 				html += '</div>';
 
 				html += await syntax_highlight({
+					prelude,
 					filename,
 					language: token.lang,
 					source,
@@ -238,6 +253,7 @@ export async function render_content_markdown(
 
 				if (converted) {
 					html += await syntax_highlight({
+						prelude,
 						filename,
 						language: token.lang === 'js' ? 'ts' : token.lang,
 						source: converted,
@@ -316,7 +332,16 @@ async function generate_ts_from_js(
 		// config files have no .ts equivalent
 		if (options.file === 'svelte.config.js') return;
 
-		return await convert_to_ts(code.replace(/\/\/\/ file: .+?\n/, ''));
+		let [before, after] = code.split('// ---cut---\n');
+
+		if (!after) {
+			after = before;
+			before = '';
+		}
+
+		const converted = await convert_to_ts(after.replace(/\/\/\/ file: .+?\n/, ''));
+
+		return converted && [before, converted].join('// ---cut---\n');
 	}
 
 	// Assumption: no module blocks
@@ -328,7 +353,7 @@ async function generate_ts_from_js(
 
 	if (!ts) return;
 
-	return code.replace(outer, `<script lang="ts">\n\t${ts.trim()}\n</script>`);
+	return code.replace(outer, `<script lang="ts">${ts}</script>`);
 }
 
 function get_jsdoc(node: ts.Node) {
@@ -346,6 +371,15 @@ async function convert_to_ts(js_code: string, indent = '', offset = '') {
 		.replace(/(\/\/\/ .+?\.)js/, '$1ts')
 		// *\/ appears in some JsDoc comments in d.ts files due to the JSDoc-in-JSDoc problem
 		.replace(/\*\\\//g, '*/');
+
+	// TODO temp
+	if (js_code.includes('// ---cut---')) {
+		throw new Error('unexpected cut directive');
+	}
+
+	if (js_code.includes('/// file:')) {
+		throw new Error('unexpected file directive');
+	}
 
 	const ast = ts.createSourceFile(
 		'filename.ts',
@@ -390,7 +424,7 @@ async function convert_to_ts(js_code: string, indent = '', offset = '') {
 								);
 
 								code.appendLeft(node.body.getStart(), '=> ');
-								code.appendLeft(node.body.getEnd(), ')');
+								code.appendLeft(node.body.getEnd(), ');');
 
 								modified = true;
 							}
@@ -401,7 +435,9 @@ async function convert_to_ts(js_code: string, indent = '', offset = '') {
 							const variable_statement = node.declarationList.declarations[0];
 
 							if (variable_statement.name.getText() === 'actions') {
-								code.appendLeft(variable_statement.getEnd(), ` satisfies ${name}`);
+								let i = variable_statement.getEnd();
+								while (code.original[i - 1] !== '}') i -= 1;
+								code.appendLeft(i, ` satisfies ${name}`);
 							} else {
 								code.appendLeft(
 									variable_statement.name.getEnd(),
@@ -458,35 +494,23 @@ async function convert_to_ts(js_code: string, indent = '', offset = '') {
 				return `${indent}import type { ${Array.from(names).join(', ')} } from '${from}';`;
 			})
 			.join('\n');
-		const idxOfLastImport = [...ast.statements]
-			.reverse()
-			.find((statement) => ts.isImportDeclaration(statement))
-			?.getEnd();
-		const insertion_point = Math.max(
-			idxOfLastImport ? idxOfLastImport + 1 : 0,
-			js_code.includes('---cut---')
-				? js_code.indexOf('\n', js_code.indexOf('---cut---')) + 1
-				: js_code.includes('/// file:')
-					? js_code.indexOf('\n', js_code.indexOf('/// file:')) + 1
-					: 0
+
+		const last_import = [...ast.statements].findLast((statement) =>
+			ts.isImportDeclaration(statement)
 		);
-		code.appendLeft(insertion_point, offset + import_statements + '\n');
+
+		if (last_import) {
+			let i = last_import.getEnd();
+			while (js_code[i] !== '\n') i += 1;
+			i += 1;
+
+			code.appendLeft(i, import_statements + '\n');
+		} else {
+			code.prependLeft(0, offset + import_statements + '\n');
+		}
 	}
 
-	let transformed = await prettier.format(code.toString(), {
-		printWidth: 100,
-		parser: 'typescript',
-		useTabs: true,
-		singleQuote: true,
-		trailingComma: 'none'
-	});
-
-	// Indent transformed's each line by 2
-	transformed = transformed
-		.replace(/\n$/, '')
-		.split('\n')
-		.map((line) => indent + line)
-		.join('\n');
+	let transformed = code.toString();
 
 	return transformed === js_code ? undefined : transformed.replace(/\n\s*\n\s*\n/g, '\n\n');
 
@@ -599,10 +623,10 @@ function parse_options(source: string, language: string) {
  * This function turns them back into tabs (plus leftover spaces for e.g. `\t * some JSDoc`)
  */
 function adjust_tab_indentation(source: string, language: string) {
-	return source.replace(/^([\-\+])?((?:    )+)/gm, (match, prefix = '', spaces) => {
-		if ((prefix && language !== 'diff') || language === 'yaml') return match;
+	return source.replace(/^((?:    )+)/gm, (match, spaces) => {
+		if (language === 'yaml') return match;
 
-		return prefix + '\t'.repeat(spaces.length / 4) + ' '.repeat(spaces.length % 4);
+		return '\t'.repeat(spaces.length / 4) + ' '.repeat(spaces.length % 4);
 	});
 }
 
@@ -611,13 +635,28 @@ function replace_blank_lines(html: string) {
 	return html.replaceAll(/<div class='line'>(&nbsp;)?<\/div>/g, '<div class="line">\n</div>');
 }
 
+const delimiter_substitutes = {
+	'---': '             ',
+	'+++': '           ',
+	':::': '         '
+};
+
+function highlight_spans(content: string, classname: string) {
+	return content
+		.split('\n')
+		.map((line) => `<span class="${classname}">${line}</span>`)
+		.join('\n');
+}
+
 async function syntax_highlight({
+	prelude,
 	source,
 	filename,
 	language,
 	twoslashBanner,
 	options
 }: {
+	prelude: string;
 	source: string;
 	filename: string;
 	language: string;
@@ -633,24 +672,28 @@ async function syntax_highlight({
 				theme
 			})
 		);
-	} else if (/^(js|ts)$/.test(language)) {
+	} else if (language === 'js' || language === 'ts') {
+		let banner = twoslashBanner?.(filename, source, language, options);
+
+		if (banner) {
+			banner = '// @filename: injected.d.ts\n' + banner;
+		}
+
+		prelude = (banner ?? '') + '\n' + (prelude ?? '// ---cut---\n');
+
+		if (language === 'ts') {
+			prelude = prelude.replace(/(\/\/ @filename: .+)\.js$/gm, '$1.ts');
+		}
+
+		/** We need to stash code wrapped in `---` highlights, because otherwise TS will error on e.g. bad syntax, duplicate declarations */
+		const redactions: string[] = [];
+
+		const redacted = source.replace(/( {13}(?:[^ ][^]+?) {13})/g, (_, content) => {
+			redactions.push(content);
+			return ' '.repeat(content.length);
+		});
 		try {
-			let banner = twoslashBanner?.(filename, source, language, options);
-
-			if (banner) {
-				banner = '// @filename: injected.d.ts\n' + banner;
-
-				if (source.includes('// @filename:')) {
-					source = source.replace('// @filename:', `${banner}\n\n// @filename:`);
-				} else {
-					source = source.replace(
-						/^(?!\/\/ @)/m,
-						`${banner}\n\n// @filename: index.${language}\n// ---cut---\n`
-					);
-				}
-			}
-
-			html = await codeToHtml(source, {
+			html = await codeToHtml(prelude + redacted, {
 				lang: 'ts',
 				theme,
 				transformers: [
@@ -663,33 +706,15 @@ async function syntax_highlight({
 					})
 				]
 			});
+
+			html = html.replace(/ {27,}/g, () => redactions.shift()!);
 		} catch (e) {
 			console.error((e as Error).message);
-			console.warn(source);
+			console.warn(prelude + redacted);
 			throw new Error(`Error compiling snippet in ${filename}`);
 		}
 
 		html = replace_blank_lines(html);
-	} else if (language === 'diff') {
-		const lines = source.split('\n').map((content) => {
-			let type = null;
-			if (/^[\+\-]/.test(content)) {
-				type = content[0] === '+' ? 'inserted' : 'deleted';
-				content = content.slice(1);
-			}
-
-			return {
-				type,
-				content: content.replace(/</g, '&lt;')
-			};
-		});
-
-		html = `<pre class="language-diff" style="background-color: var(--shiki-color-background)"><code>${lines
-			.map((line) => {
-				if (line.type) return `<span class="${line.type}">${line.content}\n</span>`;
-				return line.content + '\n';
-			})
-			.join('')}</code></pre>`;
 	} else {
 		const highlighted = await codeToHtml(source, {
 			lang: SHIKI_LANGUAGE_MAP[language as keyof typeof SHIKI_LANGUAGE_MAP],
@@ -698,6 +723,21 @@ async function syntax_highlight({
 
 		html = replace_blank_lines(highlighted);
 	}
+
+	// munge shiki output: put whitespace outside `<span>` elements, so that
+	// highlight delimiters fall outside tokens
+	html = html.replace(/(<span[^<]+?>)(\s+)/g, '$2$1').replace(/(\s+)(<\/span>)/g, '$2$1');
+
+	html = html
+		.replace(/ {13}([^ ][^]+?) {13}/g, (_, content) => {
+			return highlight_spans(content, 'highlight remove');
+		})
+		.replace(/ {11}([^ ][^]+?) {11}/g, (_, content) => {
+			return highlight_spans(content, 'highlight add');
+		})
+		.replace(/ {9}([^ ][^]+?) {9}/g, (_, content) => {
+			return highlight_spans(content, 'highlight');
+		});
 
 	return indent_multiline_comments(html)
 		.replace(/\/\*…\*\//g, '…')
