@@ -68,9 +68,8 @@
 <style>
 	.edit {
 		position: relative;
-		font-size: 1.4rem;
 		margin: 6rem 0 2rem 0;
-		font-family: var(--sk-font-ui);
+		font: var(--sk-font-ui-small);
 
 		a {
 			text-decoration: none;
@@ -105,14 +104,13 @@
 
 	.controls span {
 		display: block;
-		font-size: var(--sk-font-size-ui-medium);
+		font: var(--sk-font-ui-medium);
 		text-transform: uppercase;
-		font-family: var(--sk-font-ui);
 		color: var(--sk-text-3);
 	}
 
 	.controls a {
-		font-size: var(--sk-font-size-body-small);
+		font: var(--sk-font-body-small);
 	}
 
 	.controls span.faded {

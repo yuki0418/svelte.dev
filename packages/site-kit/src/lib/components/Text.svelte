@@ -99,12 +99,6 @@
 			margin-top: 5rem;
 		}
 
-		p,
-		ol,
-		ul {
-			margin: 1em 0;
-		}
-
 		code,
 		kbd {
 			white-space: pre-wrap;
@@ -148,8 +142,7 @@
 					position: relative;
 					top: 0.1rem;
 					flex: 1;
-					font-family: var(--sk-font-ui);
-					font-size: var(--sk-font-size-ui-small);
+					font: var(--sk-font-ui-small);
 					color: var(--sk-text-3);
 					text-overflow: ellipsis;
 					overflow: hidden;
@@ -181,7 +174,7 @@
 						justify-content: center;
 						align-items: center;
 						font-size: 1.2rem;
-						font-family: var(--sk-font-mono);
+						font-family: var(--sk-font-family-mono);
 						color: var(--sk-text-2);
 					}
 
@@ -406,7 +399,7 @@
 		}
 
 		small {
-			font-size: var(--sk-font-size-body-small);
+			font: var(--sk-font-body-small);
 			float: right;
 			pointer-events: all;
 			color: var(--sk-theme-1);
@@ -458,7 +451,7 @@
 				line-height: 1;
 				left: 0;
 				top: 0;
-				font-family: var(--sk-font-heading);
+				font-family: var(--sk-font-family-heading);
 				color: var(--sk-text-4);
 			}
 
@@ -529,8 +522,7 @@
 				align-items: center;
 				height: 3rem;
 				color: var(--sk-text-4);
-				font-style: normal;
-				font-size: var(--sk-font-size-body-small);
+				font: var(--sk-font-body-small);
 				user-select: none;
 
 				&:hover {

@@ -314,7 +314,7 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		font: var(--sk-font-size-ui-small) / 1.8rem var(--sk-font-ui);
+		font: var(--sk-font-ui-small);
 		border: none;
 		padding: 0 1rem;
 		height: 100%;
@@ -377,8 +377,8 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-family: var(--sk-font-ui);
-		font-size: var(--sk-font-size-ui-small);
+		font-family: var(--sk-font-family-ui);
+		font: var(--sk-font-ui-small); /* TODO can we just inherit */
 		padding: 0 1rem 1px 2em;
 		box-sizing: border-box;
 	}

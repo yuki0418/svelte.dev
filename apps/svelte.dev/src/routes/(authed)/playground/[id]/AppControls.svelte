@@ -345,7 +345,6 @@ export default app;`
 		left: 0;
 		width: 100%;
 		height: 100%;
-		font-family: var(--sk-font-ui);
 	}
 
 	button,
@@ -358,8 +357,6 @@ export default app;`
 
 	.icon {
 		position: relative;
-		font-family: var(--sk-font-ui);
-		font-size: var(--sk-font-size-ui-small);
 		color: var(--sk-text-3);
 		line-height: 1;
 		background-size: 1.8rem;
@@ -424,12 +421,11 @@ export default app;`
 		border: 1px solid var(--sk-back-4);
 		border-radius: var(--sk-border-radius);
 		color: currentColor;
-		font-family: var(--sk-font-ui);
 		width: 0;
 		flex: 1;
 		padding: 0.2rem 0.6rem;
 		height: 3.2rem;
-		font-size: var(--sk-font-size-ui-medium);
+		font: var(--sk-font-ui-medium);
 	}
 
 	.badge {

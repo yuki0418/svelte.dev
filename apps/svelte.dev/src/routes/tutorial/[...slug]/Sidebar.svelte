@@ -194,8 +194,7 @@
 
 		.edit {
 			color: var(--sk-text-2);
-			font-family: var(--sk-font-ui);
-			font-size: var(--sk-font-size-ui-medium);
+			font: var(--sk-font-ui-small);
 			padding: 0 0 0 1.4em;
 			background: url($lib/icons/file-edit.svg) no-repeat 0 calc(50% - 0.1em);
 			background-size: 1em 1em;
@@ -204,12 +203,17 @@
 
 	.modal-contents {
 		h2 {
-			font-size: 2.4rem;
+			font: var(--sk-font-ui-large);
 			margin: 0 0 0.5em 0;
+		}
+
+		p {
+			font: var(--sk-font-ui-medium);
 		}
 
 		label {
 			user-select: none;
+			font: var(--sk-font-ui-medium);
 		}
 
 		button {
@@ -221,6 +225,7 @@
 			margin: 1em 0 0 0;
 			border-radius: var(--sk-border-radius);
 			line-height: 1;
+			font: var(--sk-font-ui-small);
 		}
 	}
 

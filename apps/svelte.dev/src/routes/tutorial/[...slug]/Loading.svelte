@@ -121,8 +121,7 @@
 		justify-content: center;
 		background: var(--sk-back-2);
 		user-select: none;
-		font-family: var(--sk-font-ui);
-		font-size: var(--sk-font-size-ui-small);
+		font: var(--sk-font-ui-small);
 	}
 
 	.progress-container {
@@ -148,14 +147,13 @@
 	}
 
 	h2 {
-		font-family: var(--sk-font-ui);
-		font-size: var(--sk-font-size-ui-large);
+		font: var(--sk-font-ui-large);
 		margin: 0 0 0.5em 0;
 	}
 
 	p {
 		margin: 0 0 1em 0;
-		font-size: var(--sk-font-size-ui-medium);
+		font: var(--sk-font-ui-medium);
 	}
 
 	button {
@@ -169,7 +167,7 @@
 	}
 
 	small {
-		font-size: var(--sk-font-size-ui-small);
+		font: var(--sk-font-ui-small);
 		color: var(--sk-text-3);
 		text-transform: uppercase;
 	}

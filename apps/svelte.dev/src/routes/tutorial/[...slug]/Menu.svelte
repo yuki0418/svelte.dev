@@ -172,8 +172,6 @@
 
 	header {
 		position: relative;
-		/* z-index: 2; */
-		font-family: var(--sk-font-ui);
 
 		display: grid;
 		grid-template-columns: 4rem minmax(0, 1fr) 4rem;
@@ -246,7 +244,7 @@
 		text-overflow: ellipsis;
 		text-align: center;
 		color: var(--sk-text-2);
-		font-size: var(--sk-font-size-ui-medium);
+		font: var(--sk-font-ui-medium);
 
 		.desktop {
 			display: flex;
@@ -270,9 +268,8 @@
 
 	.separator {
 		position: relative;
-		font-size: 0.8em;
+		font: var(--sk-font-ui-small);
 		opacity: 0.3;
-		top: -0.1rem;
 		display: inline-block;
 	}
 
@@ -329,8 +326,6 @@
 	}
 
 	li :global(svg) {
-		position: absolute;
-		/* left: -2rem; */
 		top: 0.1rem;
 		width: 2rem;
 		height: 2rem;
@@ -352,10 +347,9 @@
 		color: var(--sk-text-2);
 		padding: 0 0 0 0.5rem;
 		display: block;
-		font-variant-numeric: tabular-nums;
 		box-sizing: border-box;
-		font-size: var(--sk-font-size-ui-medium);
-		line-height: 1.5;
+		font: var(--sk-font-ui-medium);
+		font-variant-numeric: tabular-nums;
 	}
 
 	li button {
@@ -434,7 +428,7 @@
 
 		h1 :where(.part-title, .chapter-title) {
 			grid-row: 2 / span 1;
-			font-size: var(--sk-font-size-ui-small);
+			font: var(--sk-font-ui-small);
 			color: var(--sk-text-3);
 		}
 	}
