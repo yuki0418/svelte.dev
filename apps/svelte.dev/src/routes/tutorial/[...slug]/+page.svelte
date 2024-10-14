@@ -22,6 +22,7 @@
 	import { needs_webcontainers, text_files } from './shared';
 	import OutputRollup from './OutputRollup.svelte';
 	import { page } from '$app/stores';
+	import Controls from './Controls.svelte';
 
 	export let data;
 
@@ -241,12 +242,20 @@
 <ContextMenu />
 
 <div class="container" class:mobile>
+	<Controls
+		index={data.index}
+		exercise={data.exercise}
+		{completed}
+		toggle={() => {
+			reset_files(Object.values(completed ? a : b));
+		}}
+	/>
+
 	<div class="top" class:offset={show_editor}>
 		<SplitPane id="main" type="horizontal" min="360px" max="50%" pos="33%">
 			<section slot="a" class="content">
 				<Sidebar
 					bind:sidebar
-					index={data.index}
 					exercise={data.exercise}
 					on:select={(e) => {
 						navigate_to_file(e.detail.file);
@@ -280,21 +289,6 @@
 										}}
 									/>
 								{/if}
-
-								<button
-									class="solve"
-									class:completed
-									disabled={!data.exercise.has_solution}
-									on:click={() => {
-										reset_files(Object.values(completed ? a : b));
-									}}
-								>
-									{#if completed && data.exercise.has_solution}
-										reset
-									{:else}
-										solve <Icon name="arrow-right" />
-									{/if}
-								</button>
 							</section>
 
 							<section class="editor-container" slot="b">
@@ -365,6 +359,7 @@
 		/* we transform the default state, rather than the editor state, because otherwise
 		   the positioning of tooltips is wrong (doesn't take into account transforms) */
 		transform: translate(50%, 0);
+		border-top: 1px solid var(--sk-back-5);
 	}
 
 	.top.offset {

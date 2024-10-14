@@ -1,11 +1,7 @@
 <script>
 	import { createEventDispatcher } from 'svelte';
 	import Modal from '$lib/components/Modal.svelte';
-	import Menu from './Menu.svelte';
 	import { Text } from '@sveltejs/site-kit/components';
-
-	/** @type {import('$lib/tutorial').PartStub[]} */
-	export let index;
 
 	/** @type {import('$lib/tutorial').Exercise} */
 	export let exercise;
@@ -20,8 +16,6 @@
 
 	let show_modal = false;
 </script>
-
-<Menu {index} current={exercise} />
 
 <section bind:this={sidebar}>
 	<div
@@ -120,9 +114,9 @@
 
 	.text {
 		flex: 1 1 auto;
-		padding: 2.2rem 3rem;
-		border-right: 1px solid var(--sk-back-4);
-		background: var(--sk-back-3);
+		padding: 2.2rem var(--sk-page-padding-side);
+		/* border-right: 1px solid var(--sk-back-5); */
+		background: var(--sk-back-1);
 
 		:global {
 			pre {
