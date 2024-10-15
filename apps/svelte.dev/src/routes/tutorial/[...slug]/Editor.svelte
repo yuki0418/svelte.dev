@@ -14,10 +14,13 @@
 	import { basicSetup } from 'codemirror';
 	import { onMount, tick } from 'svelte';
 	import { adapter_state } from './adapter.svelte';
-	import { autocomplete_for_svelte } from './autocompletion.js';
 	import './codemirror.css';
 	import { files, selected_file, selected_name, update_file } from './state.js';
 	import { toStore } from 'svelte/store';
+	import { autocomplete_for_svelte } from '@sveltejs/site-kit/codemirror';
+
+	/** @type {import('$lib/tutorial').Exercise}*/
+	export let exercise;
 
 	/** @type {HTMLDivElement} */
 	let container;
@@ -120,7 +123,23 @@
 				} else if (file.name.endsWith('.html')) {
 					lang = [html()];
 				} else if (file.name.endsWith('.svelte')) {
-					lang = [svelte(), ...autocomplete_for_svelte()];
+					lang = [
+						svelte(),
+						...autocomplete_for_svelte(
+							() => /** @type {import('$lib/tutorial').FileStub} */ ($selected_file).name,
+							() =>
+								$files
+									.filter(
+										(file) =>
+											file.type === 'file' &&
+											file.name.startsWith('/src') &&
+											file.name.startsWith(exercise.scope.prefix) &&
+											file.name !== '/src/__client.js' &&
+											file.name !== '/src/app.html'
+									)
+									.map((file) => file.name)
+						)
+					];
 				}
 
 				state = EditorState.create({
