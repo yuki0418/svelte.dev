@@ -55,7 +55,7 @@
 <ModalOverlay {onclose} />
 
 <div class="menu" use:trap={{ reset_focus: false }}>
-	<div class="mobile-main-menu" transition:popup={{ duration: 3000, easing: quintOut }}>
+	<div class="mobile-main-menu" transition:popup={{ duration: 200, easing: quintOut }}>
 		<div
 			class="menu-background"
 			class:ready
@@ -210,7 +210,7 @@
 		border-radius: 1rem 1rem 0 0;
 		background: var(--background, var(--sk-back-2));
 		will-change: height;
-		transition: 0.4s var(--quint-out);
+		transition: 0.3s var(--quint-out);
 		transition-property: none;
 
 		&.ready {
@@ -232,7 +232,7 @@
 	.clip {
 		width: 100%;
 		height: 100%;
-		transition: clip-path 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+		transition: clip-path 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 		will-change: clip-path;
 	}
 
@@ -244,7 +244,7 @@
 		width: 200%;
 		height: 100%;
 		grid-template-columns: 50% 50%;
-		transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+		transition: transform 0.3s cubic-bezier(0.23, 1, 0.32, 1);
 		grid-auto-rows: 100%;
 
 		&.reduced-motion {
