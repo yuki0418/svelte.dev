@@ -7,7 +7,6 @@
 	import Companies from './_home/Companies.svelte';
 	import Video from './_home/Video.svelte';
 	import Community from './_home/Community.svelte';
-	import './_home/common.css'; /* TODO wut */
 </script>
 
 <svelte:head>
