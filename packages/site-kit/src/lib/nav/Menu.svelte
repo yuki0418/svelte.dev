@@ -1,35 +1,24 @@
-<script module>
-	const current_menu_view = writable<NavigationLink | undefined>(undefined);
-	const show_context_menu = writable(false);
-	const links_store = writable<NavigationLink[]>([]);
-</script>
-
 <script lang="ts">
 	import { afterNavigate } from '$app/navigation';
-	import { page } from '$app/stores';
-	import { click_outside, focus_outside, trap } from '../actions';
-	import { overlay_open, reduced_motion } from '../stores';
-	import { tick, type Snippet } from 'svelte';
+	import { trap } from '../actions';
+	import { reduced_motion } from '../stores';
+	import { tick } from 'svelte';
 	import { expoOut, quintOut } from 'svelte/easing';
 	import type { TransitionConfig } from 'svelte/transition';
-	import { get, writable } from 'svelte/store';
 	import Icon from '../components/Icon.svelte';
 	import NavContextMenu from './NavContextMenu.svelte';
 	import type { NavigationLink } from '../types';
+	import ModalOverlay from '../components/ModalOverlay.svelte';
 
 	interface Props {
 		links: NavigationLink[];
-		back_button?: Snippet;
+		current: NavigationLink | undefined;
+		onclose: () => void;
 	}
 
-	let { links, back_button }: Props = $props();
+	let { links, current, onclose }: Props = $props();
 
-	let open = $state(false);
-
-	$links_store = links;
-	$effect.pre(() => {
-		$links_store = links;
-	});
+	let show_context_menu = $state(!!current?.sections);
 
 	let nav_context_instance: NavContextMenu | undefined = $state();
 
@@ -38,206 +27,153 @@
 	let ready = $state(false);
 
 	let universal_menu: HTMLElement | undefined = $state();
-	let menu_button: HTMLButtonElement | undefined = $state();
 
-	function close() {
-		open = false;
-	}
+	afterNavigate(onclose);
 
-	afterNavigate(close);
-
-	function mounted(_: HTMLElement, fn: (current: boolean) => void) {
+	$effect(() => {
 		// this is necessary to ensure that the menu-background height
 		// is applied without an animation
 		setTimeout(() => {
-			fn(true);
+			ready = true;
 		});
+	});
 
-		return {
-			destroy() {
-				fn(false);
-			}
-		};
-	}
-
-	function slide(node: HTMLElement, { duration = 400, easing = expoOut } = {}): TransitionConfig {
-		const height = $current_menu_view ? node.clientHeight : universal_menu_inner_height;
+	function popup(node: HTMLElement, { duration = 400, easing = expoOut } = {}): TransitionConfig {
+		const height = current ? node.clientHeight : universal_menu_inner_height;
 
 		return {
 			css: (t, u) =>
 				$reduced_motion
 					? `opacity: ${t}`
-					: `transform: translate3d(0, ${height * u}px, 0) scale3d(${0.9 + 0.1 * t}, ${
-							0.9 + 0.1 * t
-						}, 1)`,
+					: `transform: translate3d(0, ${(height * u) / 0.9}px, 0) scale(${0.9 + 0.1 * t})`,
 			easing,
 			duration
 		};
 	}
-
-	$effect.pre(() => {
-		$overlay_open = open;
-	});
 </script>
 
-<svelte:window
-	onkeydown={(e) => {
-		if (e.key === 'Escape') {
-			close();
-			// we only manage focus when Esc is hit
-			// otherwise, the navigation will reset focus
-			tick().then(() => menu_button?.focus());
-		}
-	}}
-/>
+<ModalOverlay {onclose} />
 
-<div style="display: contents" use:click_outside={close} use:focus_outside={close}>
-	<button
-		aria-label="Toggle menu"
-		aria-expanded={open}
-		class="menu-toggle raised icon"
-		class:open
-		bind:this={menu_button}
-		onclick={() => {
-			if (open) {
-				open = false;
-			} else {
-				open = true;
+<div class="menu" use:trap={{ reset_focus: false }}>
+	<div class="mobile-main-menu" transition:popup={{ duration: 3000, easing: quintOut }}>
+		<div
+			class="menu-background"
+			class:ready
+			style:height={show_context_menu ? '100%' : `${universal_menu_inner_height}px`}
+		></div>
 
-				const segment = get(page).url.pathname.split('/')[1];
-				current_menu_view.set(get(links_store).find((link) => link.slug === segment));
+		<div
+			class="clip"
+			style:--height-difference="{menu_height - universal_menu_inner_height}px"
+			ontransitionstart={(e) => {
+					const target = e.target as HTMLElement;
 
-				show_context_menu.set(!!get(current_menu_view)?.sections && !!get(current_menu_view));
-			}
-		}}
-	>
-		<Icon name={open ? 'close' : 'menu'} size={16} />
-	</button>
+					if (!target?.classList.contains('viewport')) return;
+					if (e.propertyName !== 'transform') return;
 
-	{#if open}
-		<div class="menu" use:trap={{ reset_focus: false }}>
-			<div class="mobile-main-menu" in:slide out:slide={{ duration: 500, easing: quintOut }}>
-				<div
-					class="menu-background"
-					class:ready
-					style:height={$show_context_menu ? '99%' : `${universal_menu_inner_height}px`}
-					style:--background={$show_context_menu ? 'var(--sk-back-3)' : null}
-					use:mounted={(mounted) => (ready = mounted)}
-				></div>
+					// we need to apply a clip-path during the transition so that the contents
+					// are constrained to the menu background, but only while the transition
+					// is running, otherwise it prevents the contents from being scrolled
+					const a = 'calc(var(--height-difference) + 1px)';
+					const b = '1px';
 
-				<div
-					class="clip"
-					style:--height-difference="{menu_height - universal_menu_inner_height}px"
-					ontransitionstart={(e) => {
-						const target = e.target as HTMLElement;
+					const start = show_context_menu ? a : b;
+					const end = show_context_menu ? b : a;
 
-						if (!target?.classList.contains('viewport')) return;
-						if (e.propertyName !== 'transform') return;
+					const container = e.currentTarget;
 
-						// we need to apply a clip-path during the transition so that the contents
-						// are constrained to the menu background, but only while the transition
-						// is running, otherwise it prevents the contents from being scrolled
-						const a = 'calc(var(--height-difference) + 1px)';
-						const b = '1px';
+					container.style.clipPath = `polygon(0% ${start}, 100% ${start}, 100% 100%, 0% 100%)`;
 
-						const start = $show_context_menu ? a : b;
-						const end = $show_context_menu ? b : a;
+					setTimeout(() => {
+						container.style.clipPath = `polygon(0% ${end}, 100% ${end}, 100% 100%, 0% 100%)`;
+					}, 0);
+				}}
+			ontransitionend={(e) => {
+					const target = e.target as HTMLElement;
 
-						const container = e.currentTarget;
+					if (!target?.classList.contains('viewport')) return;
+					if (e.propertyName !== 'transform') return;
 
-						container.style.clipPath = `polygon(0% ${start}, 100% ${start}, 100% 100%, 0% 100%)`;
+					e.currentTarget.style.clipPath = '';
 
-						setTimeout(() => {
-							container.style.clipPath = `polygon(0% ${end}, 100% ${end}, 100% 100%, 0% 100%)`;
-						}, 0);
-					}}
-					ontransitionend={(e) => {
-						const target = e.target as HTMLElement;
+					// whenever we transition from one menu to the other, we need to move focus to the first item in the new menu
+					if (!show_context_menu) {
+						universal_menu?.querySelector('a')?.focus();
+					}
+				}}
+		>
+			<div
+				class="viewport"
+				class:reduced-motion={$reduced_motion}
+				class:offset={show_context_menu}
+				bind:clientHeight={menu_height}
+			>
+				<div class="universal" inert={show_context_menu} bind:this={universal_menu}>
+					<div class="contents" bind:clientHeight={universal_menu_inner_height}>
+						<ul>
+							{#each links as link}
+								<li>
+									<a href="/{link.slug}">
+										{link.title}
+									</a>
 
-						if (!target?.classList.contains('viewport')) return;
-						if (e.propertyName !== 'transform') return;
+									{#if link.sections}
+										<button
+											class="raised icon"
+											onclick={async (event) => {
+												event.preventDefault();
 
-						e.currentTarget.style.clipPath = '';
+												current = link;
 
-						// whenever we transition from one menu to the other, we need to move focus to the first item in the new menu
-						if (!$show_context_menu) {
-							universal_menu?.querySelector('a')?.focus();
-						}
-					}}
-				>
-					<div
-						class="viewport"
-						class:reduced-motion={$reduced_motion}
-						class:offset={$show_context_menu}
-						bind:clientHeight={menu_height}
-					>
-						<div class="universal" inert={$show_context_menu} bind:this={universal_menu}>
-							<div class="contents" bind:clientHeight={universal_menu_inner_height}>
-								<ul>
-									{#each links as link}
-										<li>
-											<a href="/{link.slug}">
-												{link.title}
-											</a>
+												await tick();
 
-											{#if link.sections}
-												<button
-													class="raised icon"
-													onclick={async (event) => {
-														event.preventDefault();
+												show_context_menu = true;
 
-														$current_menu_view = link;
+												await tick();
 
-														await tick();
+												nav_context_instance?.scrollToActive();
+											}}
+											aria-label="Show {link.title} submenu"
+										>
+											<Icon name="arrow-right-chevron" size={18} />
+										</button>
+									{/if}
+								</li>
+							{/each}
+						</ul>
 
-														$show_context_menu = true;
+						<hr />
 
-														await tick();
-
-														nav_context_instance?.scrollToActive();
-													}}
-													aria-label="Show {link.title} submenu"
-												>
-													<Icon name="arrow-right-chevron" size={18} />
-												</button>
-											{/if}
-										</li>
-									{/each}
-								</ul>
-
-								<hr />
-
-								<ul>
-									<li><a href="/chat">Discord</a></li>
-									<li><a href="https://github.com/sveltejs/svelte">GitHub</a></li>
-								</ul>
-							</div>
-						</div>
-
-						<div class="context" inert={!$show_context_menu}>
-							{#if current_menu_view}
-								<NavContextMenu
-									bind:this={nav_context_instance}
-									contents={$current_menu_view?.sections}
-								/>
-							{/if}
-						</div>
-
-						<button
-							class="back-button raised icon"
-							onclick={() => ($show_context_menu = false)}
-							inert={!show_context_menu}
-						>
-							<Icon name="arrow-left" size={18} />
-							<span
-								>{#if back_button}{@render back_button()}{:else}Back to main menu{/if}</span
-							>
-						</button>
+						<ul>
+							<li><a href="/chat">Discord</a></li>
+							<li><a href="https://github.com/sveltejs/svelte">GitHub</a></li>
+						</ul>
 					</div>
 				</div>
+
+				<div class="context" inert={!show_context_menu}>
+					{#if current}
+						<NavContextMenu
+							bind:this={nav_context_instance}
+							title={current.title}
+							contents={current.sections}
+						/>
+					{/if}
+				</div>
+
+				<label class="back-button">
+					<button
+						class="raised icon"
+						onclick={() => (show_context_menu = false)}
+						inert={!show_context_menu}
+					>
+						<Icon name="arrow-left" size={18} />
+					</button>
+					<span>Back to main menu</span>
+				</label>
 			</div>
 		</div>
-	{/if}
+	</div>
 </div>
 
 <style>
@@ -246,7 +182,7 @@
 		position: fixed;
 		left: 0px;
 		bottom: var(--bottom, var(--sk-nav-height));
-		z-index: 1;
+		z-index: 100;
 		width: 100%;
 		height: 70vh;
 		border-radius: 1rem 1rem 0 0;
@@ -254,6 +190,7 @@
 		overflow-x: hidden;
 		pointer-events: none;
 		transform: translate3d(0, 0, 0);
+		filter: var(--sk-shadow);
 	}
 
 	button {
@@ -274,11 +211,10 @@
 		background: var(--background, var(--sk-back-2));
 		will-change: height;
 		transition: 0.4s var(--quint-out);
-		transition-property: background;
-		box-shadow: 0px 0px 6px rgba(0, 0, 0, 0.19);
+		transition-property: none;
 
 		&.ready {
-			transition-property: height, background;
+			transition-property: height;
 		}
 
 		:root.dark & {
@@ -328,13 +264,9 @@
 
 		& :global(a) {
 			position: relative;
-			display: flex;
-			align-items: center;
 			padding: 0.3rem 0;
-			margin: 0.3rem 0;
-			color: var(--sk-text-2);
+			color: var(--sk-text-3);
 			font: var(--sk-font-ui-medium);
-			border-radius: var(--sk-border-radius);
 			width: 100%;
 			height: 100%;
 		}
@@ -347,36 +279,34 @@
 		padding: 1rem var(--sk-page-padding-side);
 		max-height: 70vh;
 		overflow-y: scroll;
+
+		button {
+			/* width: 2.6rem; */
+			height: 2.6rem;
+		}
 	}
 
 	.context {
 		position: relative;
-		height: 99%;
+		height: 100%;
 		bottom: -7px;
 		padding-bottom: 2rem;
 	}
 
 	.back-button {
 		position: absolute;
-		bottom: -1px;
+		bottom: 0;
 		right: 0;
-		z-index: 9;
-
 		display: flex;
 		align-items: center;
 		justify-content: start;
 		gap: 1rem;
-
 		font: var(--sk-font-ui-medium);
 		color: var(--sk-text-3);
-
-		background-color: var(--sk-back-3);
-
-		box-shadow: 0px 0px 6px rgba(0, 0, 0, 0.19);
-
+		background-color: var(--sk-back-2);
 		width: 50%;
-		height: 48px;
-		padding: 0 1.5rem;
+		height: 4.8rem;
+		padding: 0 var(--sk-page-padding-side);
 	}
 
 	.universal .contents,
