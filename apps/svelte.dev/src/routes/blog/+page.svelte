@@ -43,7 +43,7 @@
 				>
 					<a href="/{post.slug}" title="Read the article »">
 						<h2>{post.metadata.title}</h2>
-						<p>{post.metadata.description}</p>
+						<p>{@html post.metadata.description}</p>
 					</a>
 
 					<Byline {post} />
