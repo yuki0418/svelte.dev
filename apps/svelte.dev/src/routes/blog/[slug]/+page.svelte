@@ -21,22 +21,19 @@
 	<meta name="og:image" content="https://svelte.dev/blog/{$page.params.slug}/card.png" />
 </svelte:head>
 
-<div class="content">
-	<article class="post listify text">
+<article>
+	<header>
 		<h1>{data.metadata.title}</h1>
 		<p class="standfirst">{@html data.metadata.description}</p>
-
 		<Byline post={data} />
+	</header>
 
-		<Text>
-			{@html data.body}
-		</Text>
-	</article>
-</div>
+	<Text>{@html data.body}</Text>
+</article>
 
 <style>
-	.post {
-		padding: var(--sk-page-padding-top) var(--sk-page-padding-side);
+	article {
+		padding: var(--sk-page-padding-top) var(--sk-page-padding-side) var(--sk-page-padding-bottom);
 		max-width: var(--sk-page-content-width);
 		box-sizing: content-box;
 		margin: 0 auto;
@@ -120,7 +117,7 @@
 	}
 
 	@media (min-width: 960px) {
-		.post :global {
+		article :global {
 			.max {
 				width: 100vw;
 				/* padding: 0 var(--sk-page-padding-side); */

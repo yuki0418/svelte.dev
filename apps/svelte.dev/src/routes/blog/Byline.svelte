@@ -21,7 +21,6 @@
 
 <style>
 	.byline {
-		margin: 0 0 4rem 0;
 		padding: 1rem 0 0 0;
 		font: var(--sk-font-ui-small);
 		text-transform: uppercase;

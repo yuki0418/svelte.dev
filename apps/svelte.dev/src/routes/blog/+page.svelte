@@ -79,7 +79,7 @@
 	}
 
 	article {
-		margin: 2em 0;
+		margin: 0 0 4rem 0;
 
 		/* we need to use :global because snippets don't currently cause a deopt */
 		&.top {
@@ -122,7 +122,12 @@
 
 		.featured,
 		.feed {
+			padding: 4rem 0;
+			position: relative;
+
 			&::before {
+				position: absolute;
+				top: 0;
 				font: var(--sk-font-ui-medium);
 				text-transform: uppercase;
 				color: var(--sk-text-4);
@@ -148,16 +153,12 @@
 		}
 
 		.feed {
-			position: relative;
 			display: block;
-			padding: 2em 0;
 			margin: 0;
 			list-style: none;
 
 			&::before {
 				content: 'Monthly updates';
-				position: absolute;
-				top: 0;
 			}
 
 			a {
