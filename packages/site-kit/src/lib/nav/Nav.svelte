@@ -3,28 +3,23 @@ Top navigation bar for the application. It provides a slot for the left side, th
 -->
 
 <script lang="ts">
-	import { root_scroll } from '../actions';
-	import { root_scroll_element } from '../actions/root-scroll';
-	import { overlay_open, searching, theme, nav_open, on_this_page_open } from '../stores';
+	import { overlay_open, searching, on_this_page_open } from '../stores';
 	import Icon from '../components/Icon.svelte';
 	import { page } from '$app/stores';
 	import ThemeToggle from '../components/ThemeToggle.svelte';
 	import Menu from './Menu.svelte';
-	import Separator from './Separator.svelte';
 	import type { NavigationLink } from '../types';
-	import type { Snippet } from 'svelte';
 	import Dropdown from '../components/Dropdown.svelte';
 	import { HoverMenu } from '../components';
+	import Search from '../search/Search.svelte';
 
 	interface Props {
 		home_title?: string;
 		title: string | undefined;
 		links: NavigationLink[];
-		search?: Snippet;
-		external_links?: Snippet;
 	}
 
-	let { home_title = 'Homepage', title, links, search, external_links }: Props = $props();
+	let { home_title = 'Homepage', title, links }: Props = $props();
 
 	let visible = $state(true);
 
@@ -38,9 +33,7 @@ Top navigation bar for the application. It provides a slot for the left side, th
 
 	let last_scroll = 0;
 	function handle_scroll() {
-		if (!root_scroll_element) return;
-
-		const scroll = root_scroll_element.scrollTop;
+		const scroll = window.scrollY;
 		if (!hash_changed) {
 			visible = scroll === last_scroll ? visible : scroll < 50 || scroll < last_scroll;
 		}
@@ -48,25 +41,13 @@ Top navigation bar for the application. It provides a slot for the left side, th
 		last_scroll = scroll;
 		hash_changed = false;
 	}
-
-	function handle_focus() {
-		if ($nav_open && !nav?.contains(document.activeElement)) {
-			$nav_open = false;
-		}
-	}
 </script>
 
-<svelte:window
-	use:root_scroll={handle_scroll}
-	onhashchange={handle_hashchange}
-	onfocusin={handle_focus}
-/>
+<svelte:window onscroll={handle_scroll} onhashchange={handle_hashchange} />
 
 <nav
 	bind:this={nav}
-	class:visible={visible || $nav_open}
-	class:$nav_open
-	class:dark={$theme.current === 'dark'}
+	class:visible
 	style:z-index={$overlay_open && ($searching || $on_this_page_open) ? 80 : null}
 	aria-label="Primary"
 >
@@ -120,10 +101,12 @@ Top navigation bar for the application. It provides a slot for the left side, th
 		</div>
 
 		<div class="menu">
-			{@render search?.()}
+			<Search />
 
 			<div class="external-links">
-				{@render external_links?.()}
+				<a href="/chat" data-icon="discord" aria-label="Discord Chat"></a>
+				<a href="https://github.com/sveltejs/svelte" data-icon="github" aria-label="GitHub Repo"
+				></a>
 			</div>
 
 			<ThemeToggle />
@@ -143,11 +126,7 @@ Top navigation bar for the application. It provides a slot for the left side, th
 
 		<ThemeToggle />
 
-		<Menu bind:open={$nav_open} {links}>
-			<Separator />
-
-			{@render external_links?.()}
-		</Menu>
+		<Menu {links} />
 	</div>
 </nav>
 
@@ -191,6 +170,10 @@ Top navigation bar for the application. It provides a slot for the left side, th
 	}
 
 	@media (max-width: 799px) {
+		nav {
+			transition: transform 0.2s;
+		}
+
 		nav:not(.visible):not(:focus-within) {
 			transform: translate(0, calc(var(--sk-nav-height)));
 		}
@@ -251,7 +234,7 @@ Top navigation bar for the application. It provides a slot for the left side, th
 		background: url(../branding/svelte.svg) no-repeat 0 50% / calc(100% - var(--padding-right)) auto;
 		padding: 0 var(--padding-right) 0 calc(var(--sk-page-padding-side) + 0rem);
 
-		:global(.dark) & {
+		:root.dark & {
 			background-image: url(../branding/svelte-dark.svg);
 		}
 	}
@@ -272,18 +255,6 @@ Top navigation bar for the application. It provides a slot for the left side, th
 		display: block;
 	}
 
-	.appearance {
-		display: flex;
-		align-items: center;
-		margin-left: 1.5rem;
-	}
-
-	.appearance .caption {
-		display: none;
-		line-height: 1;
-		margin-right: 0rem;
-	}
-
 	@media (max-width: 799px) {
 		nav {
 			top: unset;
@@ -296,19 +267,6 @@ Top navigation bar for the application. It provides a slot for the left side, th
 			width: 100%;
 			background: var(--sk-back-1);
 			padding: 1rem var(--sk-page-padding-side);
-		}
-
-		.appearance {
-			position: relative;
-			display: flex;
-			padding: 1.5rem 0;
-			margin: 0 1rem;
-			justify-content: space-between;
-		}
-
-		.appearance .caption {
-			display: block;
-			font: var(--sk-font-ui-medium); /* TODO this should be inherited */
 		}
 
 		nav :global(.large) {
@@ -350,6 +308,31 @@ Top navigation bar for the application. It provides a slot for the left side, th
 
 		.desktop {
 			display: contents;
+
+			[data-icon] {
+				background: no-repeat 50% 50%;
+				background-size: calc(100% - 1rem) auto;
+				padding: 0 0.5rem;
+				height: 100%;
+			}
+
+			[data-icon='discord'] {
+				width: 3.4rem;
+				background-image: url($lib/icons/discord-light.svg);
+
+				:global(.dark) & {
+					background-image: url($lib/icons/discord-dark.svg);
+				}
+			}
+
+			[data-icon='github'] {
+				width: 3rem;
+				background-image: url($lib/icons/github-light.svg);
+
+				:global(.dark) & {
+					background-image: url($lib/icons/github-dark.svg);
+				}
+			}
 		}
 
 		nav :global(.small) {

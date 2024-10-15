@@ -1,31 +1,14 @@
 <script module>
-	const open_store = writable(false);
-
 	const current_menu_view = writable<NavigationLink | undefined>(undefined);
-
 	const show_context_menu = writable(false);
-
 	const links_store = writable<NavigationLink[]>([]);
-
-	export function open_nav() {
-		if (get(open_store)) {
-			open_store.set(false);
-		} else {
-			open_store.set(true);
-
-			const segment = get(page).url.pathname.split('/')[1];
-			current_menu_view.set(get(links_store).find((link) => link.slug === segment));
-
-			show_context_menu.set(!!get(current_menu_view)?.sections && !!get(current_menu_view));
-		}
-	}
 </script>
 
 <script lang="ts">
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/stores';
 	import { click_outside, focus_outside, trap } from '../actions';
-	import { overlay_open, reduced_motion, theme } from '../stores';
+	import { overlay_open, reduced_motion } from '../stores';
 	import { tick, type Snippet } from 'svelte';
 	import { expoOut, quintOut } from 'svelte/easing';
 	import type { TransitionConfig } from 'svelte/transition';
@@ -35,18 +18,13 @@
 	import type { NavigationLink } from '../types';
 
 	interface Props {
-		open: boolean;
 		links: NavigationLink[];
-		children?: Snippet;
 		back_button?: Snippet;
 	}
 
-	let { open = $bindable(), links, children, back_button }: Props = $props();
+	let { links, back_button }: Props = $props();
 
-	$open_store = open;
-	$effect.pre(() => {
-		$open_store = open;
-	});
+	let open = $state(false);
 
 	$links_store = links;
 	$effect.pre(() => {
@@ -64,7 +42,6 @@
 
 	function close() {
 		open = false;
-		$open_store = open;
 	}
 
 	afterNavigate(close);
@@ -99,7 +76,7 @@
 	}
 
 	$effect.pre(() => {
-		$overlay_open = $open_store;
+		$overlay_open = open;
 	});
 </script>
 
@@ -117,21 +94,31 @@
 <div style="display: contents" use:click_outside={close} use:focus_outside={close}>
 	<button
 		aria-label="Toggle menu"
-		aria-expanded={$open_store}
+		aria-expanded={open}
 		class="menu-toggle raised icon"
 		class:open
 		bind:this={menu_button}
-		onclick={open_nav}
+		onclick={() => {
+			if (open) {
+				open = false;
+			} else {
+				open = true;
+
+				const segment = get(page).url.pathname.split('/')[1];
+				current_menu_view.set(get(links_store).find((link) => link.slug === segment));
+
+				show_context_menu.set(!!get(current_menu_view)?.sections && !!get(current_menu_view));
+			}
+		}}
 	>
-		<Icon name={$open_store ? 'close' : 'menu'} size={16} />
+		<Icon name={open ? 'close' : 'menu'} size={16} />
 	</button>
 
-	{#if $open_store}
+	{#if open}
 		<div class="menu" use:trap={{ reset_focus: false }}>
 			<div class="mobile-main-menu" in:slide out:slide={{ duration: 500, easing: quintOut }}>
 				<div
 					class="menu-background"
-					class:dark={$theme.current === 'dark'}
 					class:ready
 					style:height={$show_context_menu ? '99%' : `${universal_menu_inner_height}px`}
 					style:--background={$show_context_menu ? 'var(--sk-back-3)' : null}
@@ -186,37 +173,44 @@
 					>
 						<div class="universal" inert={$show_context_menu} bind:this={universal_menu}>
 							<div class="contents" bind:clientHeight={universal_menu_inner_height}>
-								{#each links as link}
-									<div class="link-item" style:--button-width={link.sections ? '4rem' : '0'}>
-										<a href="/{link.slug}">
-											{link.title}
-										</a>
+								<ul>
+									{#each links as link}
+										<li>
+											<a href="/{link.slug}">
+												{link.title}
+											</a>
 
-										{#if link.sections}
-											<button
-												class="related-menu-arrow"
-												onclick={async (event) => {
-													event.preventDefault();
+											{#if link.sections}
+												<button
+													class="raised icon"
+													onclick={async (event) => {
+														event.preventDefault();
 
-													$current_menu_view = link;
+														$current_menu_view = link;
 
-													await tick();
+														await tick();
 
-													$show_context_menu = true;
+														$show_context_menu = true;
 
-													await tick();
+														await tick();
 
-													nav_context_instance?.scrollToActive();
-												}}
-												aria-label="Show {link.title} submenu"
-											>
-												<Icon name="arrow-right-chevron" size="6rem" />
-											</button>
-										{/if}
-									</div>
-								{/each}
+														nav_context_instance?.scrollToActive();
+													}}
+													aria-label="Show {link.title} submenu"
+												>
+													<Icon name="arrow-right-chevron" size={18} />
+												</button>
+											{/if}
+										</li>
+									{/each}
+								</ul>
 
-								{@render children?.()}
+								<hr />
+
+								<ul>
+									<li><a href="/chat">Discord</a></li>
+									<li><a href="https://github.com/sveltejs/svelte">GitHub</a></li>
+								</ul>
 							</div>
 						</div>
 
@@ -230,12 +224,11 @@
 						</div>
 
 						<button
-							class="back-button"
-							class:dark={$theme.current === 'dark'}
+							class="back-button raised icon"
 							onclick={() => ($show_context_menu = false)}
 							inert={!show_context_menu}
 						>
-							<Icon name="arrow-left" size=".6em" />
+							<Icon name="arrow-left" size={18} />
 							<span
 								>{#if back_button}{@render back_button()}{:else}Back to main menu{/if}</span
 							>
@@ -283,14 +276,14 @@
 		transition: 0.4s var(--quint-out);
 		transition-property: background;
 		box-shadow: 0px 0px 6px rgba(0, 0, 0, 0.19);
-	}
 
-	.menu-background.ready {
-		transition-property: height, background;
-	}
+		&.ready {
+			transition-property: height, background;
+		}
 
-	.menu-background.dark {
-		border-top: solid 1.1px hsla(0, 0%, 100%, 0.2);
+		:root.dark & {
+			border-top: solid 1.1px hsla(0, 0%, 100%, 0.2);
+		}
 	}
 
 	.mobile-main-menu {
@@ -317,30 +310,43 @@
 		grid-template-columns: 50% 50%;
 		transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
 		grid-auto-rows: 100%;
-	}
 
-	.viewport.reduced-motion {
-		/* we still want the transition events to fire for focus management */
-		transition-duration: 0.01ms;
-	}
+		&.reduced-motion {
+			/* we still want the transition events to fire for focus management */
+			transition-duration: 0.01ms;
+		}
 
-	.viewport.offset {
-		transform: translate3d(-50%, 0, 0);
+		&.offset {
+			transform: translate3d(-50%, 0, 0);
+		}
+
+		& > * {
+			overflow-y: auto;
+			transition: inherit;
+			transition-property: transform, opacity;
+		}
+
+		& :global(a) {
+			position: relative;
+			display: flex;
+			align-items: center;
+			padding: 0.3rem 0;
+			margin: 0.3rem 0;
+			color: var(--sk-text-2);
+			font: var(--sk-font-ui-medium);
+			border-radius: var(--sk-border-radius);
+			width: 100%;
+			height: 100%;
+		}
 	}
 
 	.universal .contents {
 		position: absolute;
 		width: 50%;
 		bottom: 0;
-		padding: 1rem;
+		padding: 1rem var(--sk-page-padding-side);
 		max-height: 70vh;
 		overflow-y: scroll;
-	}
-
-	.viewport > * {
-		overflow-y: auto;
-		transition: inherit;
-		transition-property: transform, opacity;
 	}
 
 	.context {
@@ -373,64 +379,31 @@
 		padding: 0 1.5rem;
 	}
 
-	.back-button.dark {
-		border-top: solid 1px var(--sk-back-4);
-		box-shadow: none;
-	}
-
-	.back-button :global(svg) {
-		transform: scale(0.8);
-	}
-
-	.viewport :global(a) {
-		position: relative;
-		display: block;
-		align-items: center;
-		padding: 0.3rem 0;
-		margin: 0.3rem 0;
-		height: 4rem;
-		color: var(--sk-text-2);
-		font: var(--sk-font-ui-medium);
-	}
-
 	.universal .contents,
 	.context,
 	.back-button {
 		pointer-events: all;
 	}
 
-	.universal .link-item {
-		position: relative;
-		padding-right: var(--button-width);
-	}
+	.universal {
+		ul {
+			list-style: none;
+			margin: 0;
+		}
 
-	.universal .contents .link-item button {
-		position: absolute;
-		right: 0;
-		top: 0;
-		width: var(--button-width);
-		height: 100%;
-	}
+		li {
+			display: flex;
 
-	.viewport .link-item :global(svg) {
-		stroke-width: 0;
-	}
+			a {
+				flex: 1;
+			}
+		}
 
-	.viewport :global(a) {
-		display: flex;
-		align-items: center;
-		border-radius: var(--sk-border-radius);
-		width: 100%;
-		height: 100%;
-		padding-left: 1rem;
-	}
-
-	.viewport :global(a:hover),
-	.related-menu-arrow:hover {
-		border-radius: var(--sk-border-radius);
-
-		text-decoration: none;
-
-		background-color: var(--sk-back-4);
+		hr {
+			margin: 0.5rem 0;
+			height: 1px;
+			background: var(--sk-back-6);
+			border: none;
+		}
 	}
 </style>
