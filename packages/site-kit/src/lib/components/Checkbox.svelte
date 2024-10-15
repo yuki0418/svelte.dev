@@ -1,8 +1,11 @@
 <script lang="ts">
-	let { checked = $bindable() }: { checked: boolean } = $props();
+	let {
+		checked = $bindable(),
+		onchange
+	}: { checked: boolean; onchange?: (value: boolean) => void } = $props();
 </script>
 
-<input type="checkbox" bind:checked />
+<input type="checkbox" bind:checked onchange={(e) => onchange?.(e.currentTarget.checked)} />
 
 <style>
 	input[type='checkbox'] {
@@ -30,8 +33,7 @@
 		border-radius: 1em;
 		top: 0;
 		left: 0;
-		background: var(--sk-theme-2);
-		/* box-sizing: border-box; */
+		background: var(--sk-back-6);
 		box-sizing: content-box;
 	}
 
