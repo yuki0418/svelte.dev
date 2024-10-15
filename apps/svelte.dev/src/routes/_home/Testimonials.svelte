@@ -168,7 +168,7 @@
 
 		.adjective {
 			position: relative;
-			padding: 0.25em 0.5em 0.1em;
+			padding: 0.25em 0.5em;
 			line-height: 1;
 			text-transform: uppercase;
 			background: var(--sk-text-2);
