@@ -147,10 +147,6 @@
 		margin: 0 auto;
 	}
 
-	header {
-		margin: 0 0 1em 0;
-	}
-
 	h1 {
 		font: var(--sk-font-h1);
 	}

@@ -125,6 +125,10 @@ pre code {
 	font-size: var(--sk-font-size-mono);
 }
 
+header {
+	margin-bottom: 4rem;
+}
+
 ::selection {
 	background: var(--sk-selection-color);
 }
