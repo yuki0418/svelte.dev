@@ -9,15 +9,17 @@
 	import { onMount } from 'svelte';
 	import Chrome from './Chrome.svelte';
 	import Loading from './Loading.svelte';
-	import { adapter_state, subscribe } from './adapter.svelte';
+	import { adapter_state, subscribe, reset } from './adapter.svelte';
 	import type { Exercise } from '$lib/tutorial';
+	import type { Workspace } from './state.svelte';
 
 	interface Props {
 		exercise: Exercise;
 		paused: boolean;
+		workspace: Workspace;
 	}
 
-	let { exercise, paused }: Props = $props();
+	let { exercise, paused, workspace }: Props = $props();
 
 	let iframe = $state() as HTMLIFrameElement;
 	let loading = $state(true);
@@ -146,6 +148,9 @@
 			error={adapter_state.error}
 			progress={adapter_state.progress.value}
 			status={adapter_state.progress.text}
+			onreset={() => {
+				reset(workspace.files);
+			}}
 		/>
 	{/if}
 

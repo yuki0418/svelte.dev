@@ -9,7 +9,7 @@
 	import Output from './Output.svelte';
 	import { ScreenToggle } from '@sveltejs/site-kit/components';
 	import Sidebar from './Sidebar.svelte';
-	import { solution, workspace } from './state.svelte';
+	import { solution, Workspace } from './state.svelte';
 	import { create_directories } from './utils';
 	import { needs_webcontainers, text_files } from './shared';
 	import OutputRollup from './OutputRollup.svelte';
@@ -23,6 +23,8 @@
 	}
 
 	let { data }: Props = $props();
+
+	const workspace = new Workspace();
 
 	let path = data.exercise.path;
 	let show_editor = $state(false);
@@ -278,6 +280,7 @@
 								{:else}
 									<Filetree
 										exercise={data.exercise}
+										{workspace}
 										on:select={(e) => {
 											select_file(e.detail.name);
 										}}
@@ -286,7 +289,7 @@
 							</section>
 
 							<section slot="b" class="editor-container">
-								<Editor exercise={data.exercise} warnings={adapter_state.warnings} />
+								<Editor exercise={data.exercise} warnings={adapter_state.warnings} {workspace} />
 								<ImageViewer selected={workspace.selected_file} />
 
 								{#if mobile && show_filetree}
@@ -294,6 +297,7 @@
 										<Filetree
 											mobile
 											exercise={data.exercise}
+											{workspace}
 											on:select={(e) => {
 												navigate_to_file(e.detail.name);
 											}}
@@ -306,7 +310,7 @@
 
 					<section slot="b" class="preview">
 						{#if needs_webcontainers($page.data.exercise)}
-							<Output exercise={data.exercise} {paused} />
+							<Output exercise={data.exercise} {paused} {workspace} />
 						{:else}
 							<OutputRollup />
 						{/if}
