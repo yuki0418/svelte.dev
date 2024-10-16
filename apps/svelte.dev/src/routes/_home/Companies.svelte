@@ -3,9 +3,9 @@
 		<div class="logos">
 			<enhanced:img src="./companies/ikea.svg" alt="Ikea logo" />
 			<enhanced:img src="./companies/mullvad.svg" alt="Mullvad logo" />
-			<enhanced:img src="./companies/stack-overflow.svg" alt="Mullvad logo" />
-			<enhanced:img src="./companies/yelp.svg" alt="New York Times logo" />
-			<enhanced:img src="./companies/square.svg" alt="Mullvad logo" />
+			<enhanced:img src="./companies/stack-overflow.svg" alt="Stack Overflow logo" />
+			<enhanced:img src="./companies/yelp.svg" alt="Yelp logo" />
+			<enhanced:img src="./companies/square.svg" alt="Square logo" />
 			<enhanced:img src="./companies/apple.svg" alt="Apple logo" />
 		</div>
 	</div>
@@ -26,6 +26,7 @@
 		display: grid;
 		gap: 1rem;
 		align-items: center;
+		justify-content: center;
 		margin: 15rem 0 5rem 0;
 		mask-size: 100%;
 		mask-image: radial-gradient(ellipse 110rem 500%, white, white 70%, transparent);
@@ -33,13 +34,11 @@
 	}
 
 	h2 {
-		width: 100%;
+		width: 10em;
 		text-align: center;
-		margin: 0 auto;
-		position: absolute;
+		justify-self: center;
 		z-index: 2;
 		filter: drop-shadow(0 0 1rem var(--sk-back-1)) drop-shadow(0 0 1rem var(--sk-back-1));
-		padding: 0 var(--sk-page-padding-side);
 	}
 
 	.wing {
@@ -55,21 +54,13 @@
 		gap: 4rem;
 		opacity: 0.5;
 
-		.wing:first-child & {
-			right: 0;
-		}
-
-		.wing:last-child & {
-			left: 0;
-		}
-
 		img {
 			height: 100%;
 			width: auto;
 		}
 	}
 
-	@media (min-width: 800px) {
+	@media (min-width: 600px) {
 		.companies {
 			grid-template-columns: 1fr auto 1fr;
 			align-items: center;
@@ -77,7 +68,14 @@
 
 		h2 {
 			position: relative;
-			width: 12em;
+		}
+
+		.wing:first-child .logos {
+			right: 0;
+		}
+
+		.wing:last-child .logos {
+			left: 0;
 		}
 
 		.logos {
