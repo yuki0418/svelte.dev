@@ -1,7 +1,7 @@
-<script>
+<script lang="ts">
 	import { afterNavigate, beforeNavigate } from '$app/navigation';
 	import { SplitPane } from '@rich_harris/svelte-split-pane';
-	import { reset } from './adapter.svelte';
+	import { adapter_state, reset } from './adapter.svelte';
 	import Editor from './Editor.svelte';
 	import ContextMenu from './filetree/ContextMenu.svelte';
 	import Filetree from './filetree/Filetree.svelte';
@@ -10,40 +10,39 @@
 	import { ScreenToggle } from '@sveltejs/site-kit/components';
 	import Sidebar from './Sidebar.svelte';
 	import {
-		create_directories,
 		creating,
 		files,
 		reset_files,
 		selected_file,
 		selected_name,
 		solution
-	} from './state.js';
+	} from './state.svelte';
+	import { create_directories } from './utils';
 	import { needs_webcontainers, text_files } from './shared';
 	import OutputRollup from './OutputRollup.svelte';
 	import { page } from '$app/stores';
 	import Controls from './Controls.svelte';
+	import type { Stub } from '$lib/tutorial';
+	import type { Snapshot } from './$types.js';
 
-	export let data;
+	interface Props {
+		data: any;
+	}
+
+	let { data }: Props = $props();
 
 	let path = data.exercise.path;
-	let show_editor = false;
-	let show_filetree = false;
-	let paused = false;
-	let w = 1000;
+	let show_editor = $state(false);
+	let show_filetree = $state(false);
+	let paused = $state(false);
+	let w = $state(1000);
 
-	/** @type {import('$lib/tutorial').Stub[]} */
-	let previous_files = [];
+	let previous_files: Stub[] = [];
 
-	/**
-	 * @param {Record<string, string>} map
-	 * @returns {Record<string, import('$lib/tutorial').Stub>}
-	 */
-	function create_files(map) {
-		/** @type {Record<string, import('$lib/tutorial').Stub>} */
-		const files = {};
+	function create_files(map: Record<string, string>): Record<string, Stub> {
+		const files: Record<string, Stub> = {};
 
-		/** @type {string[]} */
-		const to_delete = [];
+		const to_delete: string[] = [];
 
 		for (const key in map) {
 			const contents = map[key];
@@ -53,7 +52,7 @@
 			}
 
 			const parts = key.split('/');
-			const basename = /** @type {string} */ (parts.pop());
+			const basename = parts.pop()!;
 			const ext = basename.slice(basename.lastIndexOf('.'));
 
 			if (basename === '__delete') {
@@ -63,7 +62,7 @@
 
 			while (parts.length > 0) {
 				const dir = `/${parts.join('/')}`;
-				const basename = /** @type {string} */ (parts.pop());
+				const basename = parts.pop()!;
 
 				files[dir] ??= {
 					type: 'directory',
@@ -94,14 +93,7 @@
 		return files;
 	}
 
-	$: a = create_files(data.exercise.a);
-	$: b = create_files({ ...data.exercise.a, ...data.exercise.b });
-
-	$: mobile = w < 800; // for the things we can't do with media queries
-	$: files.set(Object.values(a));
-	$: solution.set(b);
-	$: selected_name.set(data.exercise.focus);
-	$: completed = is_completed($files, b);
+	// for the things we can't do with media queries
 
 	beforeNavigate(() => {
 		previous_files = $files;
@@ -119,11 +111,7 @@
 		paused = false;
 	});
 
-	/**
-	 * @param {import('$lib/tutorial').Stub[]} files
-	 * @param {Record<string, import('$lib/tutorial').Stub> | null} solution
-	 */
-	function is_completed(files, solution) {
+	function is_completed(files: Stub[], solution: Record<string, Stub> | null) {
 		if (!solution) return true;
 
 		for (const file of files) {
@@ -143,14 +131,12 @@
 		return true;
 	}
 
-	/** @param {string} code */
-	function normalise(code) {
+	function normalise(code: string) {
 		// TODO think about more sophisticated normalisation (e.g. truncate multiple newlines)
 		return code.replace(/\s+/g, ' ').trim();
 	}
 
-	/** @param {string | null} name */
-	function select_file(name) {
+	function select_file(name: string | null) {
 		const file = name && $files.find((file) => file.name === name);
 
 		if (!file && name) {
@@ -178,8 +164,7 @@
 		show_editor = true;
 	}
 
-	/** @param {string} name */
-	function navigate_to_file(name) {
+	function navigate_to_file(name: string) {
 		if (name === $selected_name) return;
 
 		select_file(name);
@@ -190,11 +175,10 @@
 		}
 	}
 
-	/** @type {HTMLElement} */
-	let sidebar;
+	let sidebar = $state() as HTMLElement;
 
-	/** @type {import('./$types').Snapshot<number>} */
-	export const snapshot = {
+	// TODO this doesn't seem to work any more?
+	export const snapshot: Snapshot<number> = {
 		capture: () => {
 			const scroll = sidebar.scrollTop;
 			sidebar.scrollTop = 0;
@@ -204,6 +188,24 @@
 			sidebar.scrollTop = scroll;
 		}
 	};
+
+	let a = $derived(create_files(data.exercise.a));
+	let b = $derived(create_files({ ...data.exercise.a, ...data.exercise.b }));
+	let mobile = $derived(w < 800);
+
+	$effect(() => {
+		files.set(Object.values(a));
+	});
+
+	$effect(() => {
+		solution.set(b);
+	});
+
+	$effect(() => {
+		selected_name.set(data.exercise.focus);
+	});
+
+	let completed = $derived(is_completed($files, b));
 </script>
 
 <svelte:head>
@@ -225,7 +227,7 @@
 
 <svelte:window
 	bind:innerWidth={w}
-	on:popstate={(e) => {
+	onpopstate={(e) => {
 		const q = new URLSearchParams(location.search);
 		const file = q.get('file');
 
@@ -272,9 +274,9 @@
 							max="300px"
 							pos="200px"
 						>
-							<section class="navigator" slot="a">
+							<section slot="a" class="navigator">
 								{#if mobile}
-									<button class="file" on:click={() => (show_filetree = !show_filetree)}>
+									<button class="file" onclick={() => (show_filetree = !show_filetree)}>
 										{$selected_file?.name.replace(
 											data.exercise.scope.prefix,
 											data.exercise.scope.name + '/'
@@ -290,8 +292,8 @@
 								{/if}
 							</section>
 
-							<section class="editor-container" slot="b">
-								<Editor exercise={data.exercise} />
+							<section slot="b" class="editor-container">
+								<Editor exercise={data.exercise} warnings={adapter_state.warnings} />
 								<ImageViewer selected={$selected_file} />
 
 								{#if mobile && show_filetree}
