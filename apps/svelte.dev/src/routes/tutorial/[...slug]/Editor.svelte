@@ -13,7 +13,7 @@
 	import { svelteTheme } from '@sveltejs/repl/theme';
 	import { basicSetup } from 'codemirror';
 	import { onMount, tick } from 'svelte';
-	import { files, selected_file, selected_name, update_file } from './state.svelte';
+	import { workspace } from './state.svelte';
 	import { autocomplete_for_svelte } from '@sveltejs/site-kit/codemirror';
 	import type { Diagnostic } from '@codemirror/lint';
 	import type { Exercise, Stub } from '$lib/tutorial';
@@ -48,8 +48,7 @@
 
 	let installed_vim = false;
 
-	/** @param {import('$lib/tutorial').Stub[]} $files */
-	async function reset($files: Stub[]) {
+	async function reset(files: Stub[]) {
 		if (skip_reset) return;
 
 		let should_install_vim = localStorage.getItem('vim') === 'true';
@@ -66,7 +65,7 @@
 			extensions.push(vim());
 		}
 
-		for (const file of $files) {
+		for (const file of files) {
 			if (file.type !== 'file') continue;
 
 			let state = editor_states.get(file.name);
@@ -86,7 +85,7 @@
 					editor_states.set(file.name, transaction.state);
 					state = transaction.state;
 
-					if ($selected_name === file.name) {
+					if (workspace.selected_name === file.name) {
 						editor_view.setState(state);
 					}
 				}
@@ -101,9 +100,9 @@
 					lang = [
 						svelte(),
 						...autocomplete_for_svelte(
-							() => $selected_file!.name,
+							() => workspace.selected_name!,
 							() =>
-								$files
+								files
 									.filter(
 										(file) =>
 											file.type === 'file' &&
@@ -127,11 +126,11 @@
 		}
 	}
 
-	function select_state($selected_name: string | null) {
+	function select_state(selected_name: string | null) {
 		if (skip_reset) return;
 
 		const state =
-			($selected_name && editor_states.get($selected_name)) ||
+			(selected_name && editor_states.get(selected_name)) ||
 			EditorState.create({
 				doc: '',
 				extensions: [EditorState.readOnly.of(true)]
@@ -146,17 +145,17 @@
 			async dispatch(transaction) {
 				editor_view.update([transaction]);
 
-				if (transaction.docChanged && $selected_file) {
+				if (transaction.docChanged && workspace.selected_file) {
 					skip_reset = true;
 
-					// TODO do we even need to update `$files`? maintaining separate editor states is probably sufficient
-					update_file({
-						...$selected_file,
+					// TODO do we even need to update `workspace.files`? maintaining separate editor states is probably sufficient
+					workspace.update_file({
+						...workspace.selected_file,
 						contents: editor_view.state.doc.toString()
 					});
 
 					// keep `editor_states` updated so that undo/redo history is preserved for files independently
-					editor_states.set($selected_file.name, editor_view.state);
+					editor_states.set(workspace.selected_file.name, editor_view.state);
 
 					await tick();
 					skip_reset = false;
@@ -177,26 +176,26 @@
 		skip_reset = false;
 
 		editor_states.clear();
-		await reset($files);
+		await reset(workspace.files);
 
 		if (editor_view) {
 			// could be false if onMount returned early
-			select_state($selected_name);
+			select_state(workspace.selected_name);
 		}
 	});
 
 	$effect(() => {
-		reset($files);
+		reset(workspace.files);
 	});
 
 	$effect(() => {
-		select_state($selected_name);
+		select_state(workspace.selected_name);
 	});
 
 	$effect(() => {
 		if (editor_view) {
-			if ($selected_name) {
-				const current_warnings = warnings[$selected_name] || [];
+			if (workspace.selected_name) {
+				const current_warnings = warnings[workspace.selected_name] || [];
 				const diagnostics = current_warnings.map((warning) => {
 					/** @type {import('@codemirror/lint').Diagnostic} */
 					const diagnostic: Diagnostic = {
@@ -245,15 +244,15 @@
 		}, 200);
 	}}
 >
-	{#if !browser && $selected_file}
+	{#if !browser && workspace.selected_file}
 		<div class="fake">
 			<div class="fake-gutter">
-				{#each $selected_file.contents.split('\n') as _, i}
+				{#each workspace.selected_file.contents.split('\n') as _, i}
 					<div class="fake-line">{i + 1}</div>
 				{/each}
 			</div>
 			<div class="fake-content">
-				{#each $selected_file.contents.split('\n') as line}
+				{#each workspace.selected_file.contents.split('\n') as line}
 					<pre>{line || ' '}</pre>
 				{/each}
 			</div>

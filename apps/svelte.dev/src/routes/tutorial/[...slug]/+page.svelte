@@ -9,14 +9,7 @@
 	import Output from './Output.svelte';
 	import { ScreenToggle } from '@sveltejs/site-kit/components';
 	import Sidebar from './Sidebar.svelte';
-	import {
-		creating,
-		files,
-		reset_files,
-		selected_file,
-		selected_name,
-		solution
-	} from './state.svelte';
+	import { solution, workspace } from './state.svelte';
 	import { create_directories } from './utils';
 	import { needs_webcontainers, text_files } from './shared';
 	import OutputRollup from './OutputRollup.svelte';
@@ -93,10 +86,8 @@
 		return files;
 	}
 
-	// for the things we can't do with media queries
-
 	beforeNavigate(() => {
-		previous_files = $files;
+		previous_files = workspace.files;
 	});
 
 	afterNavigate(async () => {
@@ -105,7 +96,7 @@
 		const will_delete = previous_files.some((file) => !(file.name in a));
 
 		if (data.exercise.path !== path || will_delete) paused = true;
-		await reset($files);
+		await reset(workspace.files);
 
 		path = data.exercise.path;
 		paused = false;
@@ -137,40 +128,40 @@
 	}
 
 	function select_file(name: string | null) {
-		const file = name && $files.find((file) => file.name === name);
+		const file = name && workspace.files.find((file) => file.name === name);
 
 		if (!file && name) {
 			// trigger file creation input. first, create any intermediate directories
-			const new_directories = create_directories(name, $files);
+			const new_directories = create_directories(name, workspace.files);
 
 			if (new_directories.length > 0) {
-				reset_files([...$files, ...new_directories]);
+				workspace.reset_files([...workspace.files, ...new_directories]);
 			}
 
 			// find the parent directory
 			const parent = name.split('/').slice(0, -1).join('/');
 
-			creating.set({
+			workspace.creating = {
 				parent,
 				type: 'file'
-			});
+			};
 
 			show_filetree = true;
 		} else {
 			show_filetree = false;
-			selected_name.set(name);
+			workspace.selected_name = name;
 		}
 
 		show_editor = true;
 	}
 
 	function navigate_to_file(name: string) {
-		if (name === $selected_name) return;
+		if (name === workspace.selected_name) return;
 
 		select_file(name);
 
 		if (mobile) {
-			const q = new URLSearchParams({ file: $selected_name || '' });
+			const q = new URLSearchParams({ file: workspace.selected_name || '' });
 			history.pushState({}, '', `?${q}`);
 		}
 	}
@@ -191,10 +182,12 @@
 
 	let a = $derived(create_files(data.exercise.a));
 	let b = $derived(create_files({ ...data.exercise.a, ...data.exercise.b }));
+
+	// for the things we can't do with media queries
 	let mobile = $derived(w < 800);
 
 	$effect(() => {
-		files.set(Object.values(a));
+		workspace.files = Object.values(a);
 	});
 
 	$effect(() => {
@@ -202,10 +195,10 @@
 	});
 
 	$effect(() => {
-		selected_name.set(data.exercise.focus);
+		workspace.selected_name = data.exercise.focus;
 	});
 
-	let completed = $derived(is_completed($files, b));
+	let completed = $derived(is_completed(workspace.files, b));
 </script>
 
 <svelte:head>
@@ -248,7 +241,7 @@
 		exercise={data.exercise}
 		{completed}
 		toggle={() => {
-			reset_files(Object.values(completed ? a : b));
+			workspace.reset_files(Object.values(completed ? a : b));
 		}}
 	/>
 
@@ -277,7 +270,7 @@
 							<section slot="a" class="navigator">
 								{#if mobile}
 									<button class="file" onclick={() => (show_filetree = !show_filetree)}>
-										{$selected_file?.name.replace(
+										{workspace.selected_name?.replace(
 											data.exercise.scope.prefix,
 											data.exercise.scope.name + '/'
 										) ?? 'Files'}
@@ -294,7 +287,7 @@
 
 							<section slot="b" class="editor-container">
 								<Editor exercise={data.exercise} warnings={adapter_state.warnings} />
-								<ImageViewer selected={$selected_file} />
+								<ImageViewer selected={workspace.selected_file} />
 
 								{#if mobile && show_filetree}
 									<div class="mobile-filetree">
@@ -333,7 +326,7 @@
 				const url = new URL(location.origin + location.pathname);
 
 				if (show_editor) {
-					url.searchParams.set('file', $selected_name ?? '');
+					url.searchParams.set('file', workspace.selected_name ?? '');
 				}
 
 				history.pushState({}, '', url); // TODO use SvelteKit pushState

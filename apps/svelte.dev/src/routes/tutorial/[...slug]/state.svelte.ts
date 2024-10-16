@@ -1,42 +1,46 @@
-import { derived, writable, type Writable } from 'svelte/store';
+import { writable } from 'svelte/store';
 import * as adapter from './adapter.svelte';
 import type { FileStub, Stub } from '$lib/tutorial';
 
-// TODO convert to state
+class Workspace {
+	files = $state.raw<Stub[]>([]);
+	creating = $state.raw<{ parent: string; type: 'file' | 'directory' } | null>(null);
+	selected_name = $state<string | null>(null);
 
-export const files = writable([] as Stub[]);
+	get selected_file() {
+		for (const file of this.files) {
+			if (file.name === this.selected_name) return file as FileStub;
+		}
 
-export const solution = writable({} as Record<string, Stub>);
+		return null;
+	}
 
-export const creating: Writable<{ parent: string; type: 'file' | 'directory' } | null> =
-	writable(null);
-
-export const selected_name: Writable<string | null> = writable(null);
-
-export const selected_file = derived([files, selected_name], ([$files, $selected_name]) => {
-	return ($files.find((stub) => stub.name === $selected_name) as FileStub) ?? null;
-});
-
-export function update_file(file: FileStub) {
-	files.update(($files) => {
-		return $files.map((old) => {
+	update_file(file: FileStub) {
+		this.files = this.files.map((old) => {
 			if (old.name === file.name) {
 				return file;
 			}
 			return old;
 		});
-	});
 
-	adapter.update(file);
+		// TODO decouple
+		adapter.update(file);
+	}
+
+	reset_files(new_files: Stub[]) {
+		// if the selected file no longer exists, clear it
+		if (!new_files.find((file) => file.name === this.selected_name)) {
+			this.selected_name = null;
+		}
+
+		this.files = new_files;
+
+		// TODO decouple
+		adapter.reset(new_files);
+	}
 }
 
-export function reset_files(new_files: Stub[]) {
-	// if the selected file no longer exists, clear it
-	selected_name.update(($selected_name) => {
-		const file = new_files.find((file) => file.name === $selected_name);
-		return file?.name ?? null;
-	});
+export const workspace = new Workspace();
 
-	files.set(new_files);
-	adapter.reset(new_files);
-}
+// this is separate to the workspace
+export const solution = writable({} as Record<string, Stub>);

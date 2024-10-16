@@ -1,26 +1,28 @@
-<script>
+<script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import { writable } from 'svelte/store';
 	import Folder from './Folder.svelte';
 	import * as context from './context.js';
 	import Modal from '$lib/components/Modal.svelte';
-	import { files, solution, reset_files, selected_name } from '../state.svelte';
+	import { solution, workspace } from '../state.svelte';
 	import { create_directories } from '../utils';
 	import { afterNavigate } from '$app/navigation';
+	import type { Exercise, Stub } from '$lib/tutorial';
 
-	/** @type {import('$lib/tutorial').Exercise} */
-	export let exercise;
+	interface Props {
+		exercise: Exercise;
+		mobile?: boolean;
+	}
 
-	export let mobile = false;
+	let { exercise, mobile = false }: Props = $props();
 
 	const dispatch = createEventDispatcher();
 
 	const hidden = new Set(['__client.js', 'node_modules', '__delete']);
 
-	let modal_text = '';
+	let modal_text = $state('');
 
-	/** @type {import('svelte/store').Writable<Record<string, boolean>>}*/
-	const collapsed = writable({});
+	const collapsed = writable({} as Record<string, boolean>);
 
 	afterNavigate(() => {
 		collapsed.set({});
@@ -44,21 +46,24 @@
 				return;
 			}
 
-			const existing = $files.find((file) => file.name === name);
+			const existing = workspace.files.find((file) => file.name === name);
 			if (existing) {
 				modal_text = `A ${existing.type} already exists with this name`;
 				return;
 			}
 
-			const basename = /** @type {string} */ (name.split('/').pop());
+			const basename = name.split('/').pop()!;
 
-			/** @type {import('$lib/tutorial').Stub} */
-			const file =
+			const file: Stub =
 				type === 'file'
 					? { type, name, basename, text: true, contents: '' }
 					: { type, name, basename };
 
-			reset_files([...$files, ...create_directories(name, $files), file]);
+			workspace.reset_files([
+				...workspace.files,
+				...create_directories(name, workspace.files),
+				file
+			]);
 
 			if (type === 'file') {
 				dispatch('select', { name });
@@ -68,7 +73,7 @@
 		rename: async (to_rename, new_name) => {
 			const new_full_name = to_rename.name.slice(0, -to_rename.basename.length) + new_name;
 
-			if ($files.some((f) => f.name === new_full_name)) {
+			if (workspace.files.some((f) => f.name === new_full_name)) {
 				modal_text = `A file or folder named ${new_full_name} already exists`;
 				return;
 			}
@@ -88,19 +93,22 @@
 			}
 
 			if (to_rename.type === 'directory') {
-				for (const file of $files) {
+				for (const file of workspace.files) {
 					if (file.name.startsWith(to_rename.name + '/')) {
 						file.name = new_full_name + file.name.slice(to_rename.name.length);
 					}
 				}
 			}
 
-			const was_selected = $selected_name === to_rename.name;
+			const was_selected = workspace.selected_name === to_rename.name;
 
-			to_rename.basename = /** @type {string} */ (new_full_name.split('/').pop());
+			to_rename.basename = new_full_name.split('/').pop()!;
 			to_rename.name = new_full_name;
 
-			reset_files([...$files, ...create_directories(new_full_name, $files)]);
+			workspace.reset_files([
+				...workspace.files,
+				...create_directories(new_full_name, workspace.files)
+			]);
 
 			if (was_selected) {
 				dispatch('select', { name: new_full_name });
@@ -117,8 +125,8 @@
 
 			dispatch('select', { name: null });
 
-			reset_files(
-				$files.filter((f) => {
+			workspace.reset_files(
+				workspace.files.filter((f) => {
 					if (f === file) return false;
 					if (f.name.startsWith(file.name + '/')) return false;
 					return true;
@@ -131,8 +139,7 @@
 		}
 	});
 
-	/** @param {import('$lib/tutorial').Stub} file */
-	function is_deleted(file) {
+	function is_deleted(file: Stub) {
 		if (file.type === 'directory') return `${file.name}/__delete` in exercise.a;
 		if (file.text) return file.contents.startsWith('__delete');
 
@@ -140,15 +147,15 @@
 	}
 </script>
 
-<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <ul
 	class="filetree"
 	class:mobile
-	on:keydown={(e) => {
+	onkeydown={(e) => {
 		if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
 			e.preventDefault();
 			const lis = Array.from(e.currentTarget.querySelectorAll('li'));
-			const focused = lis.findIndex((li) => li.contains(/** @type {HTMLElement} */ (e.target)));
+			const focused = lis.findIndex((li) => li.contains( (e.target as HTMLElement)));
 
 			const d = e.key === 'ArrowUp' ? -1 : +1;
 
@@ -164,7 +171,7 @@
 			name: '',
 			basename: exercise.scope.name
 		}}
-		contents={$files.filter((file) => !hidden.has(file.basename) && !is_deleted(file))}
+		contents={workspace.files.filter((file) => !hidden.has(file.basename) && !is_deleted(file))}
 	/>
 </ul>
 
@@ -173,7 +180,7 @@
 		<div class="modal-contents">
 			<h2>This action is not allowed</h2>
 			<p>{modal_text}</p>
-			<button on:click={() => (modal_text = '')}>OK</button>
+			<button onclick={() => (modal_text = '')}>OK</button>
 		</div>
 	</Modal>
 {/if}
