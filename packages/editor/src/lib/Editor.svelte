@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { BROWSER } from 'esm-env';
-	import { afterNavigate, beforeNavigate } from '$app/navigation';
 	import { acceptCompletion } from '@codemirror/autocomplete';
 	import { indentWithTab } from '@codemirror/commands';
 	import { html } from '@codemirror/lang-html';
@@ -12,7 +11,6 @@
 	import { svelte } from '@replit/codemirror-lang-svelte';
 	import { svelteTheme } from '@sveltejs/repl/theme';
 	import { basicSetup } from 'codemirror';
-	import { tick } from 'svelte';
 	import { autocomplete_for_svelte } from '@sveltejs/site-kit/codemirror';
 	import type { Diagnostic } from '@codemirror/lint';
 	import { Workspace, type Item, type File } from './Workspace.svelte.js';
@@ -22,15 +20,15 @@
 	interface Props {
 		warnings: Record<string, Warning[]>; // TODO this should include errors as well
 		workspace: Workspace;
+		onchange: (file: File, contents: string) => void;
 		autocomplete_filter?: (file: File) => boolean;
 	}
 
-	let { warnings, workspace, autocomplete_filter = () => true }: Props = $props();
+	let { warnings, workspace, onchange, autocomplete_filter = () => true }: Props = $props();
 
 	let container: HTMLDivElement;
 
 	let preserve_editor_focus = $state(false);
-	let skip_reset = true;
 
 	let remove_focus_timeout = $state<any>();
 
@@ -48,9 +46,7 @@
 
 	let installed_vim = false;
 
-	async function reset(files: Item[]) {
-		if (skip_reset) return;
-
+	export async function update_files(files: Item[]) {
 		let should_install_vim = localStorage.getItem('vim') === 'true';
 
 		const q = new URLSearchParams(location.search);
@@ -120,11 +116,21 @@
 				editor_states.set(file.name, state);
 			}
 		}
+
+		select_state(workspace.selected_name);
+	}
+
+	/**
+	 * Wipe the editor state clean, including all undo/redo history.
+	 * Typically this only happens when navigating, not when
+	 * updating files in-situ
+	 */
+	export async function reset() {
+		editor_states.clear();
+		await update_files(workspace.files);
 	}
 
 	function select_state(selected_name: string | null) {
-		if (skip_reset) return;
-
 		const state =
 			(selected_name && editor_states.get(selected_name)) ||
 			EditorState.create({
@@ -142,19 +148,10 @@
 				editor_view.update([transaction]);
 
 				if (transaction.docChanged && workspace.selected_file) {
-					skip_reset = true;
-
-					// TODO do we even need to update `workspace.files`? maintaining separate editor states is probably sufficient
-					workspace.update_file({
-						...workspace.selected_file,
-						contents: editor_view.state.doc.toString()
-					});
+					onchange(workspace.selected_file, editor_view.state.doc.toString());
 
 					// keep `editor_states` updated so that undo/redo history is preserved for files independently
 					editor_states.set(workspace.selected_file.name, editor_view.state);
-
-					await tick();
-					skip_reset = false;
 				}
 			}
 		});
@@ -162,26 +159,6 @@
 		return () => {
 			editor_view.destroy();
 		};
-	});
-
-	beforeNavigate(() => {
-		skip_reset = true;
-	});
-
-	afterNavigate(async () => {
-		skip_reset = false;
-
-		editor_states.clear();
-		await reset(workspace.files);
-
-		if (editor_view) {
-			// TODO is it possible to get here?
-			select_state(workspace.selected_name);
-		}
-	});
-
-	$effect(() => {
-		reset(workspace.files);
 	});
 
 	$effect(() => {
