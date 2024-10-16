@@ -6,8 +6,9 @@ import * as yootils from 'yootils';
 import { get_depth } from '../../../utils/path.js';
 import { escape_html } from '../../../utils/escape.js';
 import { ready } from '../common/index.js';
-import type { Adapter, Warning } from '$lib/tutorial';
+import type { Adapter } from '$lib/tutorial';
 import type { Item, File } from 'editor';
+import type { CompileError, Warning } from 'svelte/compiler';
 
 const converter = new AnsiToHtml({
 	fg: 'var(--sk-text-3)'
@@ -21,6 +22,7 @@ export const state = new (class WCState {
 	base = $state.raw<string | null>(null);
 	error = $state.raw<Error | null>(null);
 	logs = $state.raw<string[]>([]);
+	errors = $state.raw<Record<string, CompileError | null>>({});
 	warnings = $state.raw<Record<string, Warning[]>>({});
 })();
 
@@ -47,7 +49,7 @@ export async function create(): Promise<Adapter> {
 		}
 	});
 
-	let warnings: Record<string, import('$lib/tutorial').Warning[]> = {};
+	let warnings: Record<string, import('svelte/compiler').Warning[]> = {};
 	let timeout: any;
 
 	function schedule_to_update_warning(msec: number) {
@@ -63,13 +65,20 @@ export async function create(): Promise<Adapter> {
 					state.logs = [];
 				} else if (chunk?.startsWith('svelte:warnings:')) {
 					const warn: Warning = JSON.parse(chunk.slice(16));
-					const filename = warn.filename.startsWith('/') ? warn.filename : '/' + warn.filename;
+					const filename = (warn.filename!.startsWith('/') ? warn.filename : '/' + warn.filename)!;
 					const current = warnings[filename];
 
 					if (!current) {
 						warnings[filename] = [warn];
 						// the exact same warning may be given multiple times in a row
-					} else if (!current.some((s) => s.code === warn.code && s.pos === warn.pos)) {
+					} else if (
+						!current.some(
+							(s) =>
+								s.code === warn.code &&
+								s.position![0] === warn.position![0] &&
+								s.position![1] === warn.position![1]
+						)
+					) {
 						current.push(warn);
 					}
 
