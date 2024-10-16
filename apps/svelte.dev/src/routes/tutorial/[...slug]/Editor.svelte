@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
 	import { browser } from '$app/environment';
 	import { afterNavigate, beforeNavigate } from '$app/navigation';
 	import { acceptCompletion } from '@codemirror/autocomplete';
@@ -18,24 +18,25 @@
 	import { files, selected_file, selected_name, update_file } from './state.js';
 	import { toStore } from 'svelte/store';
 	import { autocomplete_for_svelte } from '@sveltejs/site-kit/codemirror';
+	import type { Diagnostic } from '@codemirror/lint';
+	import type { Exercise, Stub } from '$lib/tutorial';
 
-	/** @type {import('$lib/tutorial').Exercise}*/
-	export let exercise;
+	interface Props {
+		exercise: Exercise;
+	}
 
-	/** @type {HTMLDivElement} */
-	let container;
+	let { exercise }: Props = $props();
 
-	let preserve_editor_focus = false;
+	let container = $state() as HTMLDivElement;
+
+	let preserve_editor_focus = $state(false);
 	let skip_reset = true;
 
-	/** @type {any} */
-	let remove_focus_timeout;
+	let remove_focus_timeout = $state<any>();
 
-	/** @type {Map<string, import('@codemirror/state').EditorState>} */
-	let editor_states = new Map();
+	let editor_states = new Map<string, EditorState>();
 
-	/** @type {import('@codemirror/view').EditorView} */
-	let editor_view;
+	let editor_view = $state() as EditorView;
 
 	const warnings = toStore(() => adapter_state.warnings);
 
@@ -47,34 +48,10 @@
 		svelteTheme
 	];
 
-	$: reset($files);
-
-	$: select_state($selected_name);
-
-	$: if (editor_view) {
-		if ($selected_name) {
-			const current_warnings = $warnings[$selected_name] || [];
-			const diagnostics = current_warnings.map((warning) => {
-				/** @type {import('@codemirror/lint').Diagnostic} */
-				const diagnostic = {
-					from: warning.start.character,
-					to: warning.end.character,
-					severity: 'warning',
-					message: warning.message
-				};
-
-				return diagnostic;
-			});
-			const transaction = setDiagnostics(editor_view.state, diagnostics);
-
-			editor_view.dispatch(transaction);
-		}
-	}
-
 	let installed_vim = false;
 
 	/** @param {import('$lib/tutorial').Stub[]} $files */
-	async function reset($files) {
+	async function reset($files: Stub[]) {
 		if (skip_reset) return;
 
 		let should_install_vim = localStorage.getItem('vim') === 'true';
@@ -126,7 +103,7 @@
 					lang = [
 						svelte(),
 						...autocomplete_for_svelte(
-							() => /** @type {import('$lib/tutorial').FileStub} */ ($selected_file).name,
+							() => $selected_file!.name,
 							() =>
 								$files
 									.filter(
@@ -152,8 +129,7 @@
 		}
 	}
 
-	/** @param {string | null} $selected_name */
-	function select_state($selected_name) {
+	function select_state($selected_name: string | null) {
 		if (skip_reset) return;
 
 		const state =
@@ -210,15 +186,45 @@
 			select_state($selected_name);
 		}
 	});
+
+	$effect(() => {
+		reset($files);
+	});
+
+	$effect(() => {
+		select_state($selected_name);
+	});
+
+	$effect(() => {
+		if (editor_view) {
+			if ($selected_name) {
+				const current_warnings = $warnings[$selected_name] || [];
+				const diagnostics = current_warnings.map((warning) => {
+					/** @type {import('@codemirror/lint').Diagnostic} */
+					const diagnostic: Diagnostic = {
+						from: warning.start.character,
+						to: warning.end.character,
+						severity: 'warning',
+						message: warning.message
+					};
+
+					return diagnostic;
+				});
+				const transaction = setDiagnostics(editor_view.state, diagnostics);
+
+				editor_view.dispatch(transaction);
+			}
+		}
+	});
 </script>
 
 <svelte:window
-	on:pointerdown={(e) => {
-		if (!container.contains(/** @type {HTMLElement} */ (e.target))) {
+	onpointerdown={(e) => {
+		if (!container.contains((e.target as HTMLElement))) {
 			preserve_editor_focus = false;
 		}
 	}}
-	on:message={(e) => {
+	onmessage={(e) => {
 		if (preserve_editor_focus && e.data.type === 'iframe_took_focus') {
 			editor_view.focus();
 		}
@@ -228,11 +234,11 @@
 <div
 	class="container"
 	bind:this={container}
-	on:focusin={() => {
+	onfocusin={() => {
 		clearTimeout(remove_focus_timeout);
 		preserve_editor_focus = true;
 	}}
-	on:focusout={() => {
+	onfocusout={() => {
 		// Heuristic: user did refocus themmselves if iframe_took_focus
 		// doesn't happen in the next few miliseconds. Needed
 		// because else navigations inside the iframe refocus the editor.
