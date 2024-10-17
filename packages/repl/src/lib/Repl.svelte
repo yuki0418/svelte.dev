@@ -163,7 +163,7 @@
 
 	let runes = $derived(
 		workspace.selected_name?.endsWith('.svelte.js') ||
-			(workspace.compiled[workspace.selected_name!]?.result.metadata.runes ?? false)
+			(workspace.compiled[workspace.selected_name!]?.result?.metadata.runes ?? false)
 	);
 
 	let migration = $derived(workspace.compiled[workspace.selected_name!]?.migration);
