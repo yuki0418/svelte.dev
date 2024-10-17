@@ -9,7 +9,7 @@
 	import { EditorState } from '@codemirror/state';
 	import { EditorView, keymap } from '@codemirror/view';
 	import { svelte } from '@replit/codemirror-lang-svelte';
-	import { svelteTheme } from '@sveltejs/repl/theme';
+	import { theme } from './theme';
 	import { basicSetup } from 'codemirror';
 	import { autocomplete_for_svelte } from '@sveltejs/site-kit/codemirror';
 	import type { Diagnostic } from '@codemirror/lint';
@@ -18,11 +18,12 @@
 
 	interface Props {
 		workspace: Workspace;
-		onchange: (file: File, contents: string) => void;
+		readonly?: boolean;
+		onchange?: (file: File, contents: string) => void;
 		autocomplete_filter?: (file: File) => boolean;
 	}
 
-	let { workspace, onchange, autocomplete_filter = () => true }: Props = $props();
+	let { workspace, readonly = false, onchange, autocomplete_filter = () => true }: Props = $props();
 
 	let container: HTMLDivElement;
 
@@ -39,7 +40,7 @@
 		EditorState.tabSize.of(2),
 		keymap.of([{ key: 'Tab', run: acceptCompletion }, indentWithTab]),
 		indentUnit.of('\t'),
-		svelteTheme
+		theme
 	];
 
 	let installed_vim = false;
@@ -108,7 +109,12 @@
 
 				state = EditorState.create({
 					doc: file.contents,
-					extensions: lang ? [...extensions, ...lang] : extensions
+					extensions: [
+						...extensions,
+						...(lang || []),
+						EditorState.readOnly.of(readonly),
+						EditorView.editable.of(!readonly)
+					]
 				});
 
 				editor_states.set(file.name, state);
@@ -146,7 +152,7 @@
 				editor_view.update([transaction]);
 
 				if (transaction.docChanged && workspace.selected_file) {
-					onchange(workspace.selected_file, editor_view.state.doc.toString());
+					onchange?.(workspace.selected_file, editor_view.state.doc.toString());
 
 					// keep `editor_states` updated so that undo/redo history is preserved for files independently
 					editor_states.set(workspace.selected_file.name, editor_view.state);
@@ -164,12 +170,18 @@
 	});
 
 	$effect(() => {
-		if (!editor_view || !workspace.selected_name) return;
+		// TODO we end up back here when we edit inside this component,
+		// which is... fine but would be nice to avoid
+		update_files(workspace.files);
+	});
+
+	$effect(() => {
+		if (!workspace.selected_name) return;
 
 		const diagnostics: Diagnostic[] = [];
 
-		const error = workspace.diagnostics[workspace.selected_name]?.error;
-		const current_warnings = workspace.diagnostics[workspace.selected_name]?.warnings ?? [];
+		const error = workspace.compiled[workspace.selected_name]?.error;
+		const current_warnings = workspace.compiled[workspace.selected_name]?.result?.warnings ?? [];
 
 		if (error) {
 			diagnostics.push({

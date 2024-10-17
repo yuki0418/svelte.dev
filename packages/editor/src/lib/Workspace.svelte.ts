@@ -1,5 +1,6 @@
-import type { CompileError, Warning } from 'svelte/compiler';
-import { get_diagnostics } from './diagnostics';
+import type { CompileError, CompileResult } from 'svelte/compiler';
+import { compile_file } from './compile-worker';
+import { BROWSER } from 'esm-env';
 
 export interface File {
 	type: 'file';
@@ -17,9 +18,16 @@ export interface Directory {
 
 export type Item = File | Directory;
 
-export interface Diagnostics {
+export interface Compiled {
 	error: CompileError | null;
-	warnings: Warning[];
+	result: CompileResult;
+	migration: {
+		code: string;
+	};
+}
+
+function is_svelte_file(file: File) {
+	return /\.svelte(\.|$)/.test(file.name);
 }
 
 export class Workspace {
@@ -27,7 +35,13 @@ export class Workspace {
 	creating = $state.raw<{ parent: string; type: 'file' | 'directory' } | null>(null);
 	selected_name = $state<string | null>(null);
 
-	diagnostics = $state<Record<string, Diagnostics>>({});
+	modified = $state<Record<string, boolean>>({});
+
+	compiler_options = $state.raw<{ generate: 'client' | 'server'; dev: boolean }>({
+		generate: 'client',
+		dev: false
+	});
+	compiled = $state<Record<string, Compiled>>({});
 
 	#onupdate: (file: File) => void;
 	#onreset: (items: Item[]) => void;
@@ -40,27 +54,46 @@ export class Workspace {
 	}: {
 		files: Item[];
 		selected_name: string;
-		onupdate: (file: File) => void;
-		onreset: (items: Item[]) => void;
+		onupdate?: (file: File) => void;
+		onreset?: (items: Item[]) => void;
 	}) {
 		this.files = files;
 		this.selected_name = selected_name;
-		this.#onupdate = onupdate;
-		this.#onreset = onreset;
+		this.#onupdate = onupdate ?? (() => {});
+		this.#onreset = onreset ?? (() => {});
 
 		this.#reset_diagnostics();
 	}
 
 	#reset_diagnostics() {
-		this.diagnostics = {};
+		if (!BROWSER) return;
 
-		for (const file of this.files) {
+		const keys = Object.keys(this.compiled);
+		const seen: string[] = [];
+
+		let files = this.files;
+
+		// prioritise selected file
+		if (this.selected_file) {
+			const i = this.files.indexOf(this.selected_file!);
+			files = [this.selected_file, ...this.files.slice(0, i), ...this.files.slice(i + 1)];
+		}
+
+		for (const file of files) {
 			if (file.type !== 'file') continue;
-			if (!/\.svelte(\.|$)/.test(file.name)) continue;
+			if (!is_svelte_file(file)) continue;
 
-			get_diagnostics(file).then((diagnostics) => {
-				this.diagnostics[file.name] = diagnostics;
+			seen.push(file.name);
+
+			compile_file(file, this.compiler_options).then((compiled) => {
+				this.compiled[file.name] = compiled;
 			});
+		}
+
+		for (const key of keys) {
+			if (!seen.includes(key)) {
+				delete this.compiled[key];
+			}
 		}
 	}
 
@@ -72,6 +105,14 @@ export class Workspace {
 		return null;
 	}
 
+	invalidate() {
+		this.#reset_diagnostics();
+	}
+
+	mark_saved() {
+		this.modified = {};
+	}
+
 	update_file(file: File) {
 		this.files = this.files.map((old) => {
 			if (old.name === file.name) {
@@ -80,9 +121,13 @@ export class Workspace {
 			return old;
 		});
 
-		get_diagnostics(file).then((diagnostics) => {
-			this.diagnostics[file.name] = diagnostics;
-		});
+		this.modified[file.name] = true;
+
+		if (BROWSER && is_svelte_file(file)) {
+			compile_file(file, this.compiler_options).then((compiled) => {
+				this.compiled[file.name] = compiled;
+			});
+		}
 
 		this.#onupdate(file);
 	}
@@ -94,6 +139,8 @@ export class Workspace {
 		}
 
 		this.files = new_files;
+
+		this.mark_saved();
 
 		this.#onreset(new_files);
 		this.#reset_diagnostics();
