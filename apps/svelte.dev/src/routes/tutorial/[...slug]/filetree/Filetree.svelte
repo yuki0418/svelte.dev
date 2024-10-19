@@ -1,11 +1,9 @@
 <script lang="ts">
-	import { createEventDispatcher } from 'svelte';
 	import { writable } from 'svelte/store';
 	import Folder from './Folder.svelte';
 	import * as context from './context.js';
 	import Modal from '$lib/components/Modal.svelte';
 	import { solution } from '../state.svelte';
-	import { create_directories } from '../utils';
 	import { afterNavigate } from '$app/navigation';
 	import type { Exercise } from '$lib/tutorial';
 	import type { Workspace, Item } from 'editor';
@@ -17,8 +15,6 @@
 	}
 
 	let { exercise, mobile = false, workspace }: Props = $props();
-
-	const dispatch = createEventDispatcher();
 
 	const hidden = new Set(['__client.js', 'node_modules', '__delete']);
 
@@ -61,15 +57,7 @@
 					? { type, name, basename, text: true, contents: '' }
 					: { type, name, basename };
 
-			workspace.reset_files([
-				...workspace.files,
-				...create_directories(name, workspace.files),
-				file
-			]);
-
-			if (type === 'file') {
-				dispatch('select', { name });
-			}
+			workspace.add(file);
 		},
 
 		rename: async (to_rename, new_name) => {
@@ -94,27 +82,8 @@
 				return;
 			}
 
-			if (to_rename.type === 'directory') {
-				for (const file of workspace.files) {
-					if (file.name.startsWith(to_rename.name + '/')) {
-						file.name = new_full_name + file.name.slice(to_rename.name.length);
-					}
-				}
-			}
-
-			const was_selected = workspace.selected_name === to_rename.name;
-
-			to_rename.basename = new_full_name.split('/').pop()!;
-			to_rename.name = new_full_name;
-
-			workspace.reset_files([
-				...workspace.files,
-				...create_directories(new_full_name, workspace.files)
-			]);
-
-			if (was_selected) {
-				dispatch('select', { name: new_full_name });
-			}
+			workspace.rename(to_rename, new_full_name);
+			workspace.focus();
 		},
 
 		remove: async (file) => {
@@ -125,19 +94,11 @@
 				return;
 			}
 
-			dispatch('select', { name: null });
-
-			workspace.reset_files(
-				workspace.files.filter((f) => {
-					if (f === file) return false;
-					if (f.name.startsWith(file.name + '/')) return false;
-					return true;
-				})
-			);
+			workspace.remove(file);
 		},
 
 		select: (name) => {
-			dispatch('select', { name });
+			workspace.select(name);
 		},
 
 		workspace

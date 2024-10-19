@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { forcefocus } from '@sveltejs/site-kit/actions';
-	import { get_repl_context } from '../context';
 	import { tick } from 'svelte';
 	import RunesInfo from './RunesInfo.svelte';
 	import Migrate from './Migrate.svelte';
@@ -8,28 +7,25 @@
 
 	interface Props {
 		runes: boolean;
-		remove: () => void;
-		add: () => void;
+		onchange: () => void;
 		workspace: Workspace;
 		can_migrate: boolean;
 	}
 
-	let { runes, remove, add, workspace, can_migrate }: Props = $props();
-
-	const { handle_select, rebundle } = get_repl_context();
+	let { runes, onchange, workspace, can_migrate }: Props = $props();
 
 	let editing_name: string | null = $state(null);
 	let input_value = $state('');
 
 	function select_file(filename: string) {
-		if (workspace.selected_name !== filename) {
+		if (workspace.current.name !== filename) {
 			editing_name = null;
-			handle_select(filename);
+			workspace.select(filename);
 		}
 	}
 
 	function edit_tab(file: File) {
-		if (workspace.selected_name === file.name) {
+		if (workspace.current.name === file.name) {
 			editing_name = file.name;
 			input_value = file.name;
 		}
@@ -46,10 +42,9 @@
 		if (!edited_file) return; // TODO can this happen?
 
 		const deconflicted = deconflict(input_value, edited_file);
-		edited_file.name = edited_file.basename = deconflicted;
 
-		handle_select(edited_file.name);
-		rebundle();
+		workspace.rename(edited_file, deconflicted);
+		workspace.focus();
 
 		editing_name = null;
 	}
@@ -66,87 +61,35 @@
 		}
 	}
 
-	function remove_file(filename: string) {
-		const file = workspace.files.find((val) => val.name === filename);
-		const idx = workspace.files.findIndex((val) => val.name === filename);
-
-		if (!file) return;
-
+	function remove_file(file: File) {
 		let result = confirm(`Are you sure you want to delete ${file.name}?`);
-
 		if (!result) return;
 
-		workspace.files = workspace.files.filter((file) => file.name !== filename);
+		workspace.remove(file);
 
-		remove();
-
-		// TODO is one of these lines redundant?
-		workspace.selected_name = idx === 1 ? 'App.svelte' : file.name;
-		handle_select(workspace.selected_name);
-
-		rebundle();
+		onchange();
 	}
 
 	function add_new() {
 		const basename = deconflict(`Component.svelte`);
 
-		const file: File = {
+		const file = workspace.add({
 			type: 'file',
 			name: basename,
 			basename,
 			contents: '',
 			text: true
-		};
-
-		workspace.files = workspace.files.concat(file);
+		});
 
 		editing_name = file.name;
-
 		input_value = file.name;
 
-		handle_select(editing_name);
-
-		rebundle();
-
-		add();
+		onchange();
 	}
 
 	// drag and drop
-	let from: string | null = null;
-	let over: string | null = $state(null);
-
-	function dragStart(event: DragEvent & { currentTarget: HTMLDivElement }) {
-		from = event.currentTarget.id;
-	}
-
-	function dragLeave() {
-		over = null;
-	}
-
-	function dragOver(event: DragEvent & { currentTarget: HTMLDivElement }) {
-		event.preventDefault();
-		over = event.currentTarget.id;
-	}
-
-	function dragEnd(event: DragEvent) {
-		event.preventDefault();
-
-		if (from && over) {
-			const from_index = workspace.files.findIndex((file) => file.name === from);
-			const to_index = workspace.files.findIndex((file) => file.name === over);
-
-			const from_component = workspace.files[from_index];
-
-			workspace.files.splice(from_index, 1);
-
-			workspace.files = workspace.files
-				.slice(0, to_index)
-				.concat(from_component)
-				.concat(workspace.files.slice(to_index));
-		}
-
-		from = over = null;
-	}
+	let dragging: File | null = null;
+	let dragover: File | null = $state.raw(null);
 </script>
 
 <div class="component-selector">
@@ -158,16 +101,22 @@
 				class="button"
 				role="button"
 				tabindex="0"
-				class:active={file.name === workspace.selected_name}
+				class:active={file.name === workspace.current.name}
 				class:draggable={file.name !== editing_name && index !== 0}
-				class:drag-over={over === file.name}
+				class:drag-over={file === dragover}
 				onclick={() => select_file(file.name)}
 				onkeyup={(e) => e.key === ' ' && select_file(file.name)}
 				draggable={file.name !== editing_name}
-				ondragstart={dragStart}
-				ondragover={dragOver}
-				ondragleave={dragLeave}
-				ondrop={dragEnd}
+				ondragstart={() => (dragging = file)}
+				ondragover={(e) => (e.preventDefault(), (dragover = file))}
+				ondragleave={(e) => (e.preventDefault(), (dragover = null))}
+				ondrop={() => {
+					if (dragging && dragover) {
+						workspace.move(dragging, dragover);
+					}
+
+					dragging = dragover = null;
+				}}
 			>
 				<i class="drag-handle"></i>
 
@@ -210,8 +159,12 @@
 
 					<span
 						class="remove"
-						onclick={() => remove_file(file.name)}
-						onkeyup={(e) => e.key === ' ' && remove_file(file.name)}
+						onclick={(e) => {
+							// TODO make this a real button, get rid of the keyup listener
+							remove_file(file);
+							e.stopPropagation();
+						}}
+						onkeyup={(e) => e.key === ' ' && remove_file(file)}
 					>
 						<svg width="12" height="12" viewBox="0 0 24 24">
 							<line stroke="#999" x1="18" y1="6" x2="6" y2="18" />

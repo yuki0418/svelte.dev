@@ -9,7 +9,6 @@
 	import { set_repl_context } from './context.js';
 	import { Workspace, Editor, type File } from 'editor';
 	import type { Bundle, ReplContext } from './types.js';
-	import type { CompilerOutput } from './workers/workers.js';
 
 	interface Props {
 		packagesUrl?: string;
@@ -23,9 +22,7 @@
 		injectedJS?: string;
 		injectedCSS?: string;
 		previewTheme?: 'light' | 'dark';
-		remove?: () => void;
-		add?: () => void;
-		change?: () => void;
+		onchange?: () => void;
 	}
 
 	let {
@@ -40,18 +37,24 @@
 		injectedJS = '',
 		injectedCSS = '',
 		previewTheme = 'light',
-		remove = () => {},
-		add = () => {},
-		change = () => {}
+		onchange = () => {}
 	}: Props = $props();
 
+	// TODO pass in real data
+	const dummy: File = {
+		type: 'file',
+		name: 'App.svelte',
+		basename: 'App.svelte',
+		contents: '',
+		text: true
+	};
+
 	const workspace = $state(
-		new Workspace({
-			files: [],
-			selected_name: '',
+		new Workspace([dummy], {
+			initial: 'App.svelte',
 			onupdate() {
 				rebundle();
-				change();
+				onchange?.();
 			},
 			onreset() {
 				rebundle();
@@ -59,8 +62,7 @@
 		})
 	);
 
-	let editor: any = $state();
-
+	// TODO get rid
 	export function toJSON() {
 		return {
 			imports: $bundle?.imports ?? [],
@@ -68,14 +70,12 @@
 		};
 	}
 
+	// TODO get rid
 	export async function set(data: { files: File[]; css?: string }) {
-		workspace.reset_files(data.files);
-		workspace.selected_name = 'App.svelte';
-
-		editor.reset();
-		rebundle();
+		workspace.reset(data.files, 'App.svelte');
 	}
 
+	// TODO get rid
 	export function markSaved() {
 		workspace.mark_saved();
 	}
@@ -87,9 +87,7 @@
 		bundle,
 		toggleable,
 
-		rebundle,
 		migrate,
-		handle_select,
 
 		workspace
 	});
@@ -106,18 +104,12 @@
 		if (!can_migrate) return; // belt and braces — button is already disabled
 
 		workspace.update_file({
-			...workspace.selected_file!,
+			...workspace.current!,
 			contents: migration.code
 		});
 
 		rebundle();
 	}
-
-	async function handle_select(filename: string) {
-		workspace.selected_name = filename;
-	}
-
-	let compiled: CompilerOutput | null = null;
 
 	let width = $state(0);
 	let show_output = $state(false);
@@ -162,14 +154,12 @@
 	});
 
 	let runes = $derived(
-		workspace.selected_name?.endsWith('.svelte.js') ||
-			(workspace.compiled[workspace.selected_name!]?.result?.metadata.runes ?? false)
+		workspace.current.name.endsWith('.svelte.js') ||
+			(workspace.compiled[workspace.current.name!]?.result?.metadata.runes ?? false)
 	);
 
-	let migration = $derived(workspace.compiled[workspace.selected_name!]?.migration);
-	let can_migrate = $derived(
-		migration ? migration.code !== workspace.selected_file?.contents : false
-	);
+	let migration = $derived(workspace.compiled[workspace.current.name!]?.migration);
+	let can_migrate = $derived(migration ? migration.code !== workspace.current?.contents : false);
 </script>
 
 <svelte:window onbeforeunload={before_unload} />
@@ -185,16 +175,9 @@
 			max="-4.1rem"
 		>
 			<section slot="a">
-				<ComponentSelector {runes} {add} {remove} {workspace} {can_migrate} />
+				<ComponentSelector {runes} {onchange} {workspace} {can_migrate} />
 
-				<Editor
-					bind:this={editor}
-					{workspace}
-					onchange={(file, contents) => {
-						// TODO is this even necessary? Can it be implicit?
-						workspace.update_file({ ...file, contents });
-					}}
-				/>
+				<Editor {workspace} />
 			</section>
 
 			<section slot="b" style="height: 100%;">

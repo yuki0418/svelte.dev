@@ -33,58 +33,54 @@
 
 	let view: 'result' | 'js' | 'css' | 'ast' = $state('result');
 
-	const js_workspace = new Workspace({
-		files: [],
-		selected_name: 'output.js'
+	const js: File = {
+		type: 'file',
+		name: 'output.js',
+		basename: 'output.js',
+		contents: '',
+		text: true
+	};
+
+	const css: File = {
+		type: 'file',
+		name: 'output.css',
+		basename: 'output.css',
+		contents: '',
+		text: true
+	};
+
+	const js_workspace = new Workspace([js], {
+		readonly: true
 	});
 
-	const css_workspace = new Workspace({
-		files: [],
-		selected_name: 'output.css'
+	const css_workspace = new Workspace([css], {
+		readonly: true
 	});
 
-	let is_markdown = $derived(workspace.selected_name?.endsWith('.md'));
+	let is_markdown = $derived(workspace.current.name.endsWith('.md'));
 
-	let markdown = $derived(
-		is_markdown ? (marked.parse(workspace.selected_file!.contents) as string) : ''
-	);
+	let markdown = $derived(is_markdown ? (marked.parse(workspace.current!.contents) as string) : '');
 
-	let current = $derived(workspace.compiled[workspace.selected_name!]);
+	let current = $derived(workspace.compiled[workspace.current.name!]);
 
 	// TODO this effect is a bit of a code smell
 	$effect(() => {
-		let js_contents = `/* Select a component to see its compiled code */`;
-		let css_contents = js_contents;
-
 		if (current) {
 			if (current.error) {
-				js_contents = css_contents = `/* ${current.error.message} */`;
+				js.contents = css.contents = `/* ${current.error.message} */`;
 			} else {
-				js_contents = current.result.js.code;
-				css_contents =
+				js.contents = current.result.js.code;
+				css.contents =
 					current.result.css?.code ?? `/* Add a <st` + `yle> tag to see the CSS output */`;
 			}
+		} else {
+			js.contents = css.contents = `/* Select a component to see its compiled code */`;
 		}
 
-		const js: File = {
-			type: 'file',
-			name: 'output.js',
-			basename: 'output.js',
-			contents: js_contents,
-			text: true
-		};
-
-		const css: File = {
-			type: 'file',
-			name: 'output.css',
-			basename: 'output.css',
-			contents: css_contents,
-			text: true
-		};
-
+		// TODO the untrack should probably go in update_file
 		untrack(() => {
-			js_workspace.reset_files([js]);
-			css_workspace.reset_files([css]);
+			js_workspace.update_file(js);
+			css_workspace.update_file(css);
 		});
 	});
 
@@ -92,7 +88,7 @@
 </script>
 
 <div class="view-toggle">
-	{#if workspace.selected_name?.endsWith('.md')}
+	{#if workspace.current.name.endsWith('.md')}
 		<button class="active">Markdown</button>
 	{:else}
 		<button class:active={view === 'result'} onclick={() => (view = 'result')}>Result</button>
@@ -118,11 +114,11 @@
 <!-- js output -->
 <div class="tab-content" class:visible={!is_markdown && view === 'js'}>
 	{#if embedded}
-		<Editor workspace={js_workspace} readonly />
+		<Editor workspace={js_workspace} />
 	{:else}
 		<PaneWithPanel pos="50%" panel="Compiler options">
 			<div slot="main">
-				<Editor workspace={js_workspace} readonly />
+				<Editor workspace={js_workspace} />
 			</div>
 
 			<div slot="panel-body">
@@ -134,7 +130,7 @@
 
 <!-- css output -->
 <div class="tab-content" class:visible={!is_markdown && view === 'css'}>
-	<Editor workspace={css_workspace} readonly />
+	<Editor workspace={css_workspace} />
 </div>
 
 <!-- ast output -->

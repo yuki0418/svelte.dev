@@ -1,29 +1,17 @@
 <script lang="ts">
 	import { BROWSER } from 'esm-env';
-	import { acceptCompletion } from '@codemirror/autocomplete';
-	import { indentWithTab } from '@codemirror/commands';
-	import { html } from '@codemirror/lang-html';
-	import { javascript } from '@codemirror/lang-javascript';
-	import { indentUnit } from '@codemirror/language';
 	import { setDiagnostics } from '@codemirror/lint';
-	import { EditorState } from '@codemirror/state';
-	import { EditorView, keymap } from '@codemirror/view';
-	import { svelte } from '@replit/codemirror-lang-svelte';
-	import { theme } from './theme';
-	import { basicSetup } from 'codemirror';
-	import { autocomplete_for_svelte } from '@sveltejs/site-kit/codemirror';
+	import { EditorView } from '@codemirror/view';
 	import type { Diagnostic } from '@codemirror/lint';
-	import { Workspace, type Item, type File } from './Workspace.svelte.js';
+	import { Workspace, type File } from './Workspace.svelte.js';
 	import './codemirror.css';
 
 	interface Props {
 		workspace: Workspace;
-		readonly?: boolean;
-		onchange?: (file: File, contents: string) => void;
 		autocomplete_filter?: (file: File) => boolean;
 	}
 
-	let { workspace, readonly = false, onchange, autocomplete_filter = () => true }: Props = $props();
+	let { workspace, autocomplete_filter = () => true }: Props = $props();
 
 	let container: HTMLDivElement;
 
@@ -31,156 +19,27 @@
 
 	let remove_focus_timeout = $state<any>();
 
-	let editor_states = new Map<string, EditorState>();
-
-	let editor_view = $state() as EditorView;
-
-	const extensions = [
-		basicSetup,
-		EditorState.tabSize.of(2),
-		keymap.of([{ key: 'Tab', run: acceptCompletion }, indentWithTab]),
-		indentUnit.of('\t'),
-		theme
-	];
-
-	let installed_vim = false;
-
-	export async function update_files(files: Item[]) {
-		let should_install_vim = localStorage.getItem('vim') === 'true';
-
-		const q = new URLSearchParams(location.search);
-		if (q.has('vim')) {
-			should_install_vim = q.get('vim') === 'true';
-			localStorage.setItem('vim', should_install_vim.toString());
-		}
-
-		if (!installed_vim && should_install_vim) {
-			installed_vim = true;
-			const { vim } = await import('@replit/codemirror-vim');
-			extensions.push(vim());
-		}
-
-		for (const file of files) {
-			if (file.type !== 'file') continue;
-
-			let state = editor_states.get(file.name);
-
-			if (state) {
-				const existing = state.doc.toString();
-
-				if (file.contents !== existing) {
-					const transaction = state.update({
-						changes: {
-							from: 0,
-							to: existing.length,
-							insert: file.contents
-						}
-					});
-
-					editor_states.set(file.name, transaction.state);
-					state = transaction.state;
-
-					if (workspace.selected_name === file.name) {
-						editor_view.setState(state);
-					}
-				}
-			} else {
-				let lang;
-
-				if (file.name.endsWith('.js') || file.name.endsWith('.json')) {
-					lang = [javascript()];
-				} else if (file.name.endsWith('.html')) {
-					lang = [html()];
-				} else if (file.name.endsWith('.svelte')) {
-					lang = [
-						svelte(),
-						...autocomplete_for_svelte(
-							() => workspace.selected_name!,
-							() =>
-								files
-									.filter((file) => {
-										if (file.type !== 'file') return false;
-										return autocomplete_filter(file);
-									})
-									.map((file) => file.name)
-						)
-					];
-				}
-
-				state = EditorState.create({
-					doc: file.contents,
-					extensions: [
-						...extensions,
-						...(lang || []),
-						EditorState.readOnly.of(readonly),
-						EditorView.editable.of(!readonly)
-					]
-				});
-
-				editor_states.set(file.name, state);
-			}
-		}
-	}
-
-	/**
-	 * Wipe the editor state clean, including all undo/redo history.
-	 * Typically this only happens when navigating, not when
-	 * updating files in-situ
-	 */
-	export async function reset() {
-		editor_states.clear();
-		await update_files(workspace.files);
-		select_state(workspace.selected_name);
-	}
-
-	function select_state(selected_name: string | null) {
-		const state =
-			(selected_name && editor_states.get(selected_name)) ||
-			EditorState.create({
-				doc: '',
-				extensions: [EditorState.readOnly.of(true)]
-			});
-
-		editor_view.setState(state);
-	}
+	let editor_view: EditorView;
 
 	$effect(() => {
 		editor_view = new EditorView({
-			parent: container,
-			async dispatch(transaction) {
-				editor_view.update([transaction]);
-
-				if (transaction.docChanged && workspace.selected_file) {
-					onchange?.(workspace.selected_file, editor_view.state.doc.toString());
-
-					// keep `editor_states` updated so that undo/redo history is preserved for files independently
-					editor_states.set(workspace.selected_file.name, editor_view.state);
-				}
-			}
+			parent: container
 		});
 
+		workspace.link(editor_view);
+
 		return () => {
+			workspace.unlink(editor_view);
 			editor_view.destroy();
 		};
 	});
 
+	// TODO move into workspace
 	$effect(() => {
-		select_state(workspace.selected_name);
-	});
-
-	$effect(() => {
-		// TODO we end up back here when we edit inside this component,
-		// which is... fine but would be nice to avoid
-		update_files(workspace.files);
-	});
-
-	$effect(() => {
-		if (!workspace.selected_name) return;
-
 		const diagnostics: Diagnostic[] = [];
 
-		const error = workspace.compiled[workspace.selected_name]?.error;
-		const current_warnings = workspace.compiled[workspace.selected_name]?.result?.warnings ?? [];
+		const error = workspace.compiled[workspace.current.name]?.error;
+		const current_warnings = workspace.compiled[workspace.current.name]?.result?.warnings ?? [];
 
 		if (error) {
 			diagnostics.push({
@@ -252,15 +111,15 @@
 		}, 200);
 	}}
 >
-	{#if !BROWSER && workspace.selected_file}
+	{#if !BROWSER && workspace.current}
 		<div class="fake">
 			<div class="fake-gutter">
-				{#each workspace.selected_file.contents.split('\n') as _, i}
+				{#each workspace.current.contents.split('\n') as _, i}
 					<div class="fake-line">{i + 1}</div>
 				{/each}
 			</div>
 			<div class="fake-content">
-				{#each workspace.selected_file.contents.split('\n') as line}
+				{#each workspace.current.contents.split('\n') as line}
 					<pre>{line || ' '}</pre>
 				{/each}
 			</div>

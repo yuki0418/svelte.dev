@@ -10,14 +10,12 @@
 	import { ScreenToggle } from '@sveltejs/site-kit/components';
 	import Sidebar from './Sidebar.svelte';
 	import { solution } from './state.svelte';
-	import { create_directories } from './utils';
 	import { needs_webcontainers, text_files } from './shared';
 	import OutputRollup from './OutputRollup.svelte';
 	import { page } from '$app/stores';
 	import Controls from './Controls.svelte';
 	import type { Item } from 'editor';
 	import type { Snapshot } from './$types.js';
-	import { tick } from 'svelte';
 
 	interface Props {
 		data: any;
@@ -30,9 +28,6 @@
 	let show_filetree = $state(false);
 	let paused = $state(false);
 	let w = $state(1000);
-
-	let editor: any; // TODO
-	let skip_set_files = true;
 
 	let previous_files: Item[] = [];
 
@@ -119,15 +114,18 @@
 		const file = name && workspace.files.find((file) => file.name === name);
 
 		if (!file && name) {
-			// trigger file creation input. first, create any intermediate directories
-			const new_directories = create_directories(name, workspace.files);
-
-			if (new_directories.length > 0) {
-				workspace.reset_files([...workspace.files, ...new_directories]);
-			}
-
-			// find the parent directory
+			// create intermediate directories if necessary
 			const parent = name.split('/').slice(0, -1).join('/');
+
+			if (!workspace.files.some((item) => item.name === parent)) {
+				const basename = parent.split('/').pop()!;
+
+				workspace.add({
+					type: 'directory',
+					name: parent,
+					basename
+				});
+			}
 
 			workspace.creating = {
 				parent,
@@ -137,19 +135,22 @@
 			show_filetree = true;
 		} else {
 			show_filetree = false;
-			workspace.selected_name = name;
+
+			if (name) {
+				workspace.select(name);
+			}
 		}
 
 		show_editor = true;
 	}
 
 	function navigate_to_file(name: string) {
-		if (name === workspace.selected_name) return;
+		if (name === workspace.current.name) return;
 
 		select_file(name);
 
 		if (mobile) {
-			const q = new URLSearchParams({ file: workspace.selected_name || '' });
+			const q = new URLSearchParams({ file: workspace.current.name || '' });
 			history.pushState({}, '', `?${q}`);
 		}
 	}
@@ -171,9 +172,8 @@
 	let a = $derived(create_files(data.exercise.a));
 	let b = $derived(create_files({ ...data.exercise.a, ...data.exercise.b }));
 
-	const workspace = new Workspace({
-		files: Object.values(a),
-		selected_name: data.exercise.focus,
+	const workspace = new Workspace(Object.values(a), {
+		initial: data.exercise.focus,
 		onupdate(file) {
 			adapter.update(file);
 		},
@@ -188,28 +188,16 @@
 	let mobile = $derived(w < 800);
 
 	$effect(() => {
-		workspace.files = Object.values(a);
-	});
-
-	$effect(() => {
+		// TODO get rid of this store/effect
 		solution.set(b);
 	});
 
-	$effect(() => {
-		workspace.selected_name = data.exercise.focus; // TODO this probably belongs in afterNavigate
-	});
-
 	beforeNavigate(() => {
-		skip_set_files = true;
 		previous_files = workspace.files;
 	});
 
 	afterNavigate(async () => {
-		skip_set_files = false;
-
-		editor.reset();
-
-		w = window.innerWidth;
+		workspace.reset(Object.values(a), data.exercise.focus);
 
 		const will_delete = previous_files.some((file) => !(file.name in a));
 
@@ -218,11 +206,6 @@
 
 		path = data.exercise.path;
 		paused = false;
-	});
-
-	$effect(() => {
-		const files = workspace.files; // capture the dependency. TODO don't use an effect here
-		if (!skip_set_files) editor.update_files(files);
 	});
 
 	let completed = $derived(is_completed(workspace.files, b));
@@ -268,7 +251,7 @@
 		exercise={data.exercise}
 		{completed}
 		toggle={() => {
-			workspace.reset_files(Object.values(completed ? a : b));
+			workspace.set(Object.values(completed ? a : b));
 		}}
 	/>
 
@@ -297,34 +280,19 @@
 							<section slot="a" class="navigator">
 								{#if mobile}
 									<button class="file" onclick={() => (show_filetree = !show_filetree)}>
-										{workspace.selected_name?.replace(
+										{workspace.current.name.replace(
 											data.exercise.scope.prefix,
 											data.exercise.scope.name + '/'
 										) ?? 'Files'}
 									</button>
 								{:else}
-									<Filetree
-										exercise={data.exercise}
-										{workspace}
-										on:select={(e) => {
-											select_file(e.detail.name);
-										}}
-									/>
+									<Filetree exercise={data.exercise} {workspace} />
 								{/if}
 							</section>
 
 							<section slot="b" class="editor-container">
 								<Editor
-									bind:this={editor}
 									{workspace}
-									onchange={async (file, contents) => {
-										skip_set_files = true;
-
-										workspace.update_file({ ...file, contents });
-
-										await tick();
-										skip_set_files = false;
-									}}
 									autocomplete_filter={(file) => {
 										return (
 											file.name.startsWith('/src') &&
@@ -334,18 +302,11 @@
 										);
 									}}
 								/>
-								<ImageViewer selected={workspace.selected_file} />
+								<ImageViewer selected={workspace.current} />
 
 								{#if mobile && show_filetree}
 									<div class="mobile-filetree">
-										<Filetree
-											mobile
-											exercise={data.exercise}
-											{workspace}
-											on:select={(e) => {
-												navigate_to_file(e.detail.name);
-											}}
-										/>
+										<Filetree mobile exercise={data.exercise} {workspace} />
 									</div>
 								{/if}
 							</section>
@@ -374,7 +335,7 @@
 				const url = new URL(location.origin + location.pathname);
 
 				if (show_editor) {
-					url.searchParams.set('file', workspace.selected_name ?? '');
+					url.searchParams.set('file', workspace.current.name ?? '');
 				}
 
 				history.pushState({}, '', url); // TODO use SvelteKit pushState
