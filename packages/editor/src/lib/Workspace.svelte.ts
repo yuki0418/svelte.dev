@@ -1,4 +1,4 @@
-import type { CompileError, CompileResult } from 'svelte/compiler';
+import type { CompileError, CompileOptions, CompileResult } from 'svelte/compiler';
 import { EditorState } from '@codemirror/state';
 import { compile_file } from './compile-worker';
 import { BROWSER } from 'esm-env';
@@ -74,12 +74,17 @@ const default_extensions = [
 // 	extensions.push(vim());
 // }
 
+interface ExposedCompilerOptions {
+	generate: 'client' | 'server';
+	dev: boolean;
+}
+
 export class Workspace {
 	// TODO this stuff should all be readonly
 	creating = $state.raw<{ parent: string; type: 'file' | 'directory' } | null>(null);
 	modified = $state<Record<string, boolean>>({});
 
-	compiler_options = $state.raw<{ generate: 'client' | 'server'; dev: boolean }>({
+	#compiler_options = $state.raw<ExposedCompilerOptions>({
 		generate: 'client',
 		dev: false
 	});
@@ -128,6 +133,10 @@ export class Workspace {
 		return this.#files;
 	}
 
+	get compiler_options() {
+		return this.#compiler_options;
+	}
+
 	get current() {
 		return this.#current;
 	}
@@ -148,10 +157,6 @@ export class Workspace {
 		setTimeout(() => {
 			this.#view?.focus();
 		});
-	}
-
-	invalidate() {
-		this.#reset_diagnostics();
 	}
 
 	mark_saved() {
@@ -302,6 +307,11 @@ export class Workspace {
 	unlink(view: EditorView) {
 		if (this.#view !== view) throw new Error('Wrong editor view');
 		this.#view = null;
+	}
+
+	update_compiler_options(options: Partial<ExposedCompilerOptions>) {
+		this.#compiler_options = { ...this.#compiler_options, ...options };
+		this.#reset_diagnostics();
 	}
 
 	update_file(file: File) {
