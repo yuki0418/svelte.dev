@@ -125,7 +125,7 @@
 		justify-content: center;
 		margin: 0 auto;
 		gap: 1rem;
-		grid-column: 1 / 3;
+
 		width: 100%;
 
 		em {
