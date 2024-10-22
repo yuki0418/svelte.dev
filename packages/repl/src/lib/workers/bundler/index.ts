@@ -17,6 +17,10 @@ import type { Warning } from '../../types';
 import type { CompileError, CompileOptions, CompileResult } from 'svelte/compiler';
 import type { File } from 'editor';
 
+// hack for magic-string and rollup inline sourcemaps
+// do not put this into a separate module and import it, would be treeshaken in prod
+self.window = self;
+
 let packages_url: string;
 let svelte_url: string;
 let version: string;
@@ -40,6 +44,9 @@ self.addEventListener('message', async (event: MessageEvent<BundleMessageData>) 
 				// https://github.com/mjackson/unpkg/issues/355
 				const compiler = await fetch(`${svelte_url}/compiler.cjs`).then((r) => r.text());
 				(0, eval)(compiler + '\n//# sourceURL=compiler.cjs@' + version);
+			} else if (version.startsWith('3.')) {
+				const compiler = await fetch(`${svelte_url}/compiler.js`).then((r) => r.text());
+				(0, eval)(compiler + '\n//# sourceURL=compiler.js@' + version);
 			} else {
 				const compiler = await fetch(`${svelte_url}/compiler/index.js`).then((r) => r.text());
 				(0, eval)(compiler + '\n//# sourceURL=compiler/index.js@' + version);
@@ -395,7 +402,7 @@ async function get_bundle(
 				`.replace(/\t/g, '');
 				}
 			} else if (id.endsWith('.svelte.js')) {
-				result = svelte.compileModule(code, {
+				result = svelte.compileModule?.(code, {
 					filename: name + '.js',
 					generate: 'client',
 					dev: true
