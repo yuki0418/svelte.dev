@@ -4,12 +4,9 @@ const mappings = new Map([
 	['/docs/accessibility-warnings', '/docs/svelte/compiler-warnings'],
 	['/docs/basic-markup', '/docs/svelte/basic-markup'],
 	['/docs/client-side-component-api', '/docs/svelte/legacy-component-api'],
-	['/docs/component-directives', '/docs/svelte/svelte-files'], // no good mapping for this one
 	['/docs/custom-elements-api', '/docs/svelte/custom-elements'],
-	['/docs/element-directives', '/docs/svelte/basic-markup'], // no good mapping for this one
 	['/docs/introduction', '/docs/svelte/overview'],
 	['/docs/server-side-component-api', '/docs/svelte/legacy-component-api'],
-	['/docs/special-elements', '/docs/svelte/svelte-window'], // no good mapping for this one
 	['/docs/special-tags', '/docs/svelte/basic-markup'],
 	// ['/docs/svelte', '/docs/svelte/svelte'], - can't map this. /docs/svelte is now a redirect to the overview page
 	['/docs/svelte-action', '/docs/svelte/svelte-action'],
