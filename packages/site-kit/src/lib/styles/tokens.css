@@ -19,7 +19,7 @@
 	--sk-page-padding-side: 1.6rem;
 	--sk-thick-border-width: 0.3rem;
 	--sk-border-radius: 0.4rem;
-	--sk-page-content-width: 84rem;
+	--sk-page-content-width: 76rem;
 	--sk-banner-height: 0px;
 	--sk-pane-controls-height: 4.2rem;
 
@@ -32,8 +32,8 @@
 	--sk-font-size-h1: 3.6rem;
 	--sk-font-size-h2: 3rem;
 	--sk-font-size-h3: 2.4rem;
-	--sk-font-size-body: 1.8rem;
-	--sk-font-size-body-small: 1.6rem;
+	--sk-font-size-body: 2rem;
+	--sk-font-size-body-small: 1.8rem;
 	--sk-font-size-ui-small: 1.3rem;
 	--sk-font-size-ui-medium: 1.6rem;
 	--sk-font-size-ui-large: 3rem;
@@ -65,9 +65,9 @@
 	--sk-back-5: hsl(0, 0%, 92%);
 	--sk-back-6: hsl(0, 0%, 86%);
 
-	--sk-text-1: hsl(0, 0%, 12%);
-	--sk-text-2: hsl(0, 0%, 20%);
-	--sk-text-3: hsl(0, 0%, 30%);
+	--sk-text-1: hsl(0, 0%, 5%);
+	--sk-text-2: hsl(0, 0%, 12%);
+	--sk-text-3: hsl(0, 0%, 27%);
 	--sk-text-4: hsl(0, 0%, 45%);
 	--sk-scrollbar: rgba(0, 0, 0, 0.3);
 	--sk-shadow: drop-shadow(0px 0px 14px rgba(0, 0, 0, 0.1));
@@ -122,12 +122,9 @@
 
 	@media (resolution: 2x) {
 		--sk-font-family-body: 'EB Garamond', Georgia, serif;
-		--sk-font-size-body: 2.1rem;
-		--sk-font-size-body-small: 1.8rem;
+		--sk-font-size-body: 2.2rem;
+		--sk-font-size-body-small: 2rem;
 		--sk-line-height-body: 1.5;
-		--sk-text-1: hsl(0, 0%, 5%);
-		--sk-text-2: hsl(0, 0%, 12%);
-		--sk-text-3: hsl(0, 0%, 27%);
 	}
 
 	&.dark {
