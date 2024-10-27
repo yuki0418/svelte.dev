@@ -121,7 +121,7 @@
 	--safari-fix: translate3d(0, 0, 0.01);
 
 	/* set at 1.75x so if you zoom +/-10% from common settings it won't switch your font */
-	@media (resolution: 1.75x) {
+	@media (min-resolution: 1.75x) {
 		--sk-font-family-body: 'EB Garamond', Georgia, serif;
 		--sk-font-size-body: 2.2rem;
 		--sk-font-size-body-small: 2rem;
