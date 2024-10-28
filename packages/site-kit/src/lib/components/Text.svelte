@@ -376,9 +376,9 @@
 			li::before {
 				content: '';
 				position: absolute;
-				top: calc(50% - 0.3rem);
+				top: 1.43rem;
 				left: -1.8rem;
-				background-color: var(--sk-back-5);
+				background-color: var(--sk-text-4);
 				width: 0.6rem;
 				height: 0.6rem;
 				border-radius: 50%;
