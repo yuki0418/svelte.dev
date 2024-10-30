@@ -5,7 +5,7 @@ on:
     types: [sync-request]
 
 jobs:
-  log:
+  Sync:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,5 +25,5 @@ jobs:
           commit-message: sync ${{ github.event.client_payload.package }} docs
           title: Sync ${{ github.event.client_payload.package }}
           body: This is an automated pull request
-          branch: sync:${{ github.event.client_payload.package }}
+          branch: sync/${{ github.event.client_payload.package }}
           base: main
