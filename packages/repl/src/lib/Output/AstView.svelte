@@ -92,8 +92,8 @@
 		--base: hsl(45, 7%, 45%);
 		--string: hsl(41, 37%, 45%);
 		--number: hsl(102, 27%, 50%);
-		background: var(--sk-back-3);
-		color: var(--sk-code-base);
+		background: var(--sk-bg-3);
+		color: var(--shiki-color-text);
 		display: flex;
 		flex-direction: column;
 	}
