@@ -24,5 +24,10 @@ jobs:
       - name: Sync
         run: cd apps/svelte.dev && pnpm sync-docs --owner="${{ github.event.client_payload.owner }}" -p "${{ github.event.client_payload.package }}#${{ github.event.client_payload.branch }}"
 
+      - name: Configure Git
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
       - name: Push
         run: git add -A && git commit -m "sync docs" && git push -u origin sync/${{ github.event.client_payload.package }}/${{ github.event.client_payload.owner }}/${{ github.event.client_payload.branch }}
