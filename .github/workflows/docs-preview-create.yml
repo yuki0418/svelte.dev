@@ -4,6 +4,9 @@ on:
   repository_dispatch:
     types: [docs-preview-create]
 
+env:
+  BRANCH: sync/${{ github.event.client_payload.package }}/${{ github.event.client_payload.owner }}/${{ github.event.client_payload.branch }}
+
 jobs:
   Sync:
     runs-on: ubuntu-latest
@@ -19,7 +22,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Checkout
-        run: git checkout -B sync/${{ github.event.client_payload.package }}/${{ github.event.client_payload.owner }}/${{ github.event.client_payload.branch }}
+        run: git switch -c ${{ env.BRANCH }} || git switch ${{ env.BRANCH }}
 
       - name: Sync
         run: cd apps/svelte.dev && pnpm sync-docs --owner="${{ github.event.client_payload.owner }}" -p "${{ github.event.client_payload.package }}#${{ github.event.client_payload.branch }}"
@@ -30,4 +33,4 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Push
-        run: git add -A && git commit -m "sync docs" && git push -u origin sync/${{ github.event.client_payload.package }}/${{ github.event.client_payload.owner }}/${{ github.event.client_payload.branch }}
+        run: git add -A && git commit -m "sync docs" && git push -u origin ${{ env.BRANCH }}
