@@ -105,7 +105,7 @@
 		display: grid;
 		grid-template-columns: 4rem 1fr;
 		grid-gap: 1rem;
-		padding: 1rem 0;
+		padding: 0.4rem 0;
 		font: var(--sk-font-mono);
 	}
 
