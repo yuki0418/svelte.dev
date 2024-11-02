@@ -106,11 +106,11 @@
 		grid-template-columns: 4rem 1fr;
 		grid-gap: 1rem;
 		padding: 0.4rem 0;
-		font: var(--sk-font-mono);
 	}
 
 	.fake * {
-		color: #ccc;
+		color: var(--sk-fg-4);
+		font: var(--sk-font-mono);
 	}
 
 	.fake-gutter {
@@ -120,11 +120,5 @@
 
 	.fake-content {
 		padding: 0 1rem;
-	}
-
-	@media (prefers-color-scheme: dark) {
-		.fake * {
-			color: #666;
-		}
 	}
 </style>
