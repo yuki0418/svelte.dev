@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          token: ${{ github.GH_TOKEN }}
+          token: ${{ secrets.GH_TOKEN }}
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
