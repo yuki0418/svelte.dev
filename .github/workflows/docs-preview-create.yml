@@ -19,7 +19,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - name: Checkout
-        run: git checkout -B refs/heads/sync/${{ github.event.client_payload.package }}/${{ github.event.client_payload.owner }}/${{ github.event.client_payload.branch }}
+        run: git checkout -B sync/${{ github.event.client_payload.package }}/${{ github.event.client_payload.owner }}/${{ github.event.client_payload.branch }}
 
       - name: Sync
         run: cd apps/svelte.dev && pnpm sync-docs --owner="${{ github.event.client_payload.owner }}" -p "${{ github.event.client_payload.package }}#${{ github.event.client_payload.branch }}"
