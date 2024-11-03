@@ -45,17 +45,21 @@ jobs:
         if: steps.push.outcome == 'success'
         uses: peter-evans/find-comment@v3
         with:
+          token: ${{ secrets.COMMENTER_TOKEN }}
           repository: ${{ github.event.client_payload.repo }}
           issue-number: ${{ github.event.client_payload.pr }}
           comment-author: 'github-actions[bot]'
           body-includes: Build output
 
       - name: Create comment
-        # if: steps.fc.outputs.comment-id == ''
+        if: steps.fc.outputs.comment-id == ''
         uses: peter-evans/create-or-update-comment@v4
         with:
+          token: ${{ secrets.COMMENTER_TOKEN }}
           repository: ${{ github.event.client_payload.repo }}
           issue-number: ${{ github.event.client_payload.pr }}
           body: |
-            Preview deployment: https://svelte-dev-git-${{ env.SLUG }}-svelte.vercel.app/
+            preview: https://svelte-dev-git-${{ env.SLUG }}-svelte.vercel.app/
+
+            _this is an automated message_
           edit-mode: replace
