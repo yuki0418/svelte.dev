@@ -5,17 +5,12 @@ on:
     types: [docs-preview-create]
 
 env:
-  ID: ${{ github.event.client_payload.package }}/${{ github.event.client_payload.owner }}/${{ github.event.client_payload.branch }}
+  BRANCH: preview-${{ github.event.client_payload.package }}-${{ github.event.client_payload.pr }}
 
 jobs:
   Sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Set env vars
-        run: |
-          echo "BRANCH=preview/$ID" >> $GITHUB_ENV
-          echo "SLUG=preview-$(echo ${ID//\//})" >> $GITHUB_ENV
-
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_TOKEN }}
@@ -59,7 +54,7 @@ jobs:
           repository: ${{ github.event.client_payload.repo }}
           issue-number: ${{ github.event.client_payload.pr }}
           body: |
-            preview: https://svelte-dev-git-${{ env.SLUG }}-svelte.vercel.app/
+            preview: https://svelte-dev-git-${{ env.BRANCH }}-svelte.vercel.app/
 
             _this is an automated message_
           edit-mode: replace
