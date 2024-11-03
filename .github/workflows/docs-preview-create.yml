@@ -43,14 +43,13 @@ jobs:
 
       - name: Find comment
         id: fc
-        # if: steps.push.outcome == 'success'
         uses: peter-evans/find-comment@v3
         with:
           token: ${{ secrets.COMMENTER_TOKEN }}
           repository: ${{ github.event.client_payload.repo }}
           issue-number: ${{ github.event.client_payload.pr }}
-          comment-author: 'github-actions[bot]'
-          body-includes: Build output
+          comment-author: 'Rich-Harris' # it's using my personal access token, not sure if there's a way to comment as a bot instead
+          body-includes: _this is an automated message_
 
       - name: Create comment
         if: steps.fc.outputs.comment-id == ''
