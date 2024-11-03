@@ -5,12 +5,17 @@ on:
     types: [docs-preview-create]
 
 env:
-  BRANCH: sync/${{ github.event.client_payload.package }}/${{ github.event.client_payload.owner }}/${{ github.event.client_payload.branch }}
+  ID: ${{ github.event.client_payload.package }}/${{ github.event.client_payload.owner }}/${{ github.event.client_payload.branch }}
 
 jobs:
   Sync:
     runs-on: ubuntu-latest
     steps:
+      - name: Set env vars
+        run: |
+          echo "BRANCH=preview/$ID" >> $GITHUB_ENV
+          echo "SLUG=preview/$(echo ${ID//\//})" >> $GITHUB_ENV
+
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GH_TOKEN }}
@@ -35,10 +40,6 @@ jobs:
       - name: Push
         id: push
         run: git add -A && git commit -m "sync docs" && git push -u origin ${{ env.BRANCH }}
-
-      - name: Get preview deployment URL
-        id: url
-        run: echo "SLUG=$(echo ${BRANCH//\//})" >> $GITHUB_ENV
 
       - name: Find comment
         id: fc
