@@ -42,7 +42,7 @@ jobs:
 
       - name: Find comment
         id: fc
-        if: steps.push.outcome == 'success'
+        # if: steps.push.outcome == 'success'
         uses: peter-evans/find-comment@v3
         with:
           token: ${{ secrets.COMMENTER_TOKEN }}
