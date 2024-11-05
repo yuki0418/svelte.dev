@@ -12,7 +12,7 @@
 
 	interface Props {
 		packagesUrl?: string;
-		svelteUrl?: any;
+		svelteVersion?: string;
 		embedded?: boolean;
 		orientation?: 'columns' | 'rows';
 		relaxed?: boolean;
@@ -27,7 +27,7 @@
 
 	let {
 		packagesUrl = 'https://unpkg.com',
-		svelteUrl = `${BROWSER ? location.origin : ''}/svelte`,
+		svelteVersion = 'latest',
 		embedded = false,
 		orientation = 'columns',
 		relaxed = false,
@@ -51,7 +51,7 @@
 
 	const workspace = new Workspace([dummy], {
 		initial: 'App.svelte',
-		svelte_version: svelteUrl.split('@')[1],
+		svelte_version: svelteVersion,
 		onupdate() {
 			rebundle();
 			onchange?.();
@@ -113,13 +113,14 @@
 	let width = $state(0);
 	let show_output = $state(false);
 	let status: string | null = $state(null);
+	let runtime_error: Error | null = $state(null);
 	let status_visible = $state(false);
 	let status_timeout: NodeJS.Timeout | undefined = undefined;
 
 	const bundler = BROWSER
 		? new Bundler({
 				packages_url: packagesUrl,
-				svelte_url: svelteUrl,
+				svelte_version: svelteVersion,
 				onstatus: (message) => {
 					if (message) {
 						// show bundler status, but only after time has elapsed, to
@@ -134,8 +135,10 @@
 						status_visible = false;
 						status_timeout = undefined;
 					}
-
 					status = message;
+				},
+				onerror: (message) => {
+					runtime_error = new Error(message);
 				}
 			})
 		: null;
@@ -188,6 +191,7 @@
 					{injectedCSS}
 					{previewTheme}
 					{workspace}
+					runtimeError={status_visible ? runtime_error : null}
 				/>
 			</section>
 		</SplitPane>
