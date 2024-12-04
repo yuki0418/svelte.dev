@@ -12,7 +12,7 @@ This year, we're turning it around: you get to relax while _we_ take on a challe
 
 Follow [@svelte.dev](https://bsky.app/profile/svelte.dev) and [@sveltesociety.dev](https://bsky.app/profile/sveltesociety.dev) and check back every day to see what we've been cooking up.
 
-## Day 1: Error boundaries
+## Day 1: error boundaries
 
 This is a long-awaited and much-requested feature, that allows you to isolate and recover from errors that occur during rendering.
 
