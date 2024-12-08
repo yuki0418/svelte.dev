@@ -64,7 +64,7 @@ A lot of you disliked the dropdown navigation for the tutorial — essentially a
 
 - [tutorial](/tutorial/svelte/welcome-to-svelte)
 
-## Day 8: functional bindings
+## Day 8: function bindings
 
 You can now do `bind:value={get, set}` to validate and transform bound values. This works for all bindings, even on components.
 
