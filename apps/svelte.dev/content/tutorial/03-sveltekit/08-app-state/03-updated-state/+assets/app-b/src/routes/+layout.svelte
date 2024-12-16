@@ -1,25 +1,25 @@
 <script>
-	import { page, navigating, updated } from '$app/stores';
+	import { page, navigating, updated } from '$app/state';
 	let { children } = $props();
 </script>
 
 <nav>
-	<a href="/" aria-current={$page.url.pathname === '/'}>
+	<a href="/" aria-current={page.url.pathname === '/'}>
 		home
 	</a>
 
-	<a href="/about" aria-current={$page.url.pathname === '/about'}>
+	<a href="/about" aria-current={page.url.pathname === '/about'}>
 		about
 	</a>
 
-	{#if $navigating}
-		navigating to {$navigating.to.url.pathname}
+	{#if navigating.to}
+		navigating to {navigating.to.url.pathname}
 	{/if}
 </nav>
 
 {@render children()}
 
-{#if $updated}
+{#if updated.current}
 	<div class="toast">
 		<p>
 			A new version of the app is available
@@ -52,4 +52,3 @@
 		border-radius: 4px;
 	}
 </style>
-
