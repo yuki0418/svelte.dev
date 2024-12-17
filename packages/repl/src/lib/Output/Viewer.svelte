@@ -295,23 +295,19 @@
 
 <div class="iframe-container">
 	{#if !onLog}
-		<PaneWithPanel pos="100%" max="-4.2rem" panel="Console">
-			<div slot="main">
-				{@render main()}
-			</div>
-
-			<div slot="panel-header">
+		<PaneWithPanel pos="100%" panel="Console" {main}>
+			{#snippet header()}
 				<button class="raised" disabled={logs.length === 0} on:click|stopPropagation={clear_logs}>
 					{#if logs.length > 0}
 						({logs.length})
 					{/if}
 					Clear
 				</button>
-			</div>
+			{/snippet}
 
-			<section slot="panel-body">
+			{#snippet body()}
 				<Console {logs} />
-			</section>
+			{/snippet}
 		</PaneWithPanel>
 	{:else}
 		{@render main()}
