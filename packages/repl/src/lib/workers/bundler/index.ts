@@ -93,7 +93,6 @@ async function init(v: string, packages_url: string) {
 
 		can_use_experimental_async = true;
 	} catch (e) {
-		console.error(e);
 		// do nothing
 	}
 
