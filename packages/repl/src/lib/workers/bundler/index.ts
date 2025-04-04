@@ -443,7 +443,6 @@ async function bundle(
 	can_use_experimental_async: boolean
 ): Promise<BundleResult> {
 	if (!DEV) {
-		console.clear();
 		console.log(`running Svelte compiler version %c${svelte.VERSION}`, 'font-weight: bold');
 	}
 
