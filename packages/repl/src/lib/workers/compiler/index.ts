@@ -1,6 +1,7 @@
 import '@sveltejs/site-kit/polyfills';
 import type { CompileResult } from 'svelte/compiler';
 import type { ExposedCompilerOptions, File } from '../../Workspace.svelte';
+import { stripTypes } from 'typestript';
 import { load_svelte } from '../npm';
 
 // hack for magic-string and Svelte 4 compiler
@@ -21,7 +22,7 @@ addEventListener('message', async (event) => {
 
 	const { can_use_experimental_async, svelte } = (cache[version] ??= await load_svelte(version));
 
-	if (!file.name.endsWith('.svelte') && !svelte.compileModule) {
+	if (!file.name.endsWith('.svelte') && !file.name.includes('.svelte.') && !svelte.compileModule) {
 		// .svelte.js file compiled with Svelte 3/4 compiler
 		postMessage({
 			id,
@@ -37,7 +38,7 @@ addEventListener('message', async (event) => {
 
 	let migration = null;
 
-	if (svelte.migrate) {
+	if (file.name.endsWith('.svelte') && svelte.migrate) {
 		try {
 			migration = svelte.migrate(file.contents, { filename: file.name });
 		} catch (e) {
@@ -80,7 +81,8 @@ addEventListener('message', async (event) => {
 				compilerOptions.experimental = { async: true };
 			}
 
-			result = svelte.compileModule(file.contents, compilerOptions);
+			const code = file.name.endsWith('.ts') ? stripTypes(file.contents).toString() : file.contents;
+			result = svelte.compileModule(code, compilerOptions);
 		}
 
 		postMessage({
