@@ -180,7 +180,7 @@ export function resolve_subpath(pkg: Package, subpath: string): string {
 	return subpath;
 }
 
-export function add_suffix(pkg: Package, path: string) {
+export function normalize_path(pkg: Package, path: string) {
 	for (const suffix of ['', '.js', '.mjs', '.cjs', '/index.js', '/index.mjs', '/index.cjs']) {
 		let with_suffix = path + suffix;
 
