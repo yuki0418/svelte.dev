@@ -193,12 +193,17 @@
 								return untrack(() => original[method].apply(this, v));
 							}
 						}
-						const component = mount(App, { target: document.body });
-						window.__unmount_previous = () => {
-							for (const method of console_methods) {
-								console[method] = original[method];
+						let component;
+						try {
+							component = mount(App, { target: document.body });
+						} finally {
+							window.__unmount_previous = () => {
+								for (const method of console_methods) {
+									console[method] = original[method];
+								}
+								if (component) unmount(component);
+								window.__unmount_previous = null;
 							}
-							unmount(component);
 						}
 					}
 					//# sourceURL=playground:output
